@@ -21,10 +21,11 @@ include = [
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
 # Optional dependencies; the code handles absence gracefully
-agno = { version = "*", optional = true }
-weaviate-client = { version = "*", optional = true }
+agno = { version = "*"}
+weaviate-client = { version = "*" }
 sentence-transformers = { version = "*" }
 openai = { version = "*" }
+python-dotenv = { version = "*" }
 [tool.poetry.extras]
 # Install with: poetry install --with weaviate
 weaviate = ["weaviate-client"]

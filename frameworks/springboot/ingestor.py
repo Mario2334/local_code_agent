@@ -9,7 +9,6 @@ from agno.document import Document
 def collect_documents(code_path: str, framework: str = "springboot") -> List[Document]:
     """Collect documents from a Spring Boot project codebase.
 
-    Mirrors the file scanning behavior previously implemented inline in runner.py.
     """
     root = Path(code_path)
     if not root.exists():
@@ -51,7 +50,8 @@ def collect_documents(code_path: str, framework: str = "springboot") -> List[Doc
                 if f.stat().st_size > max_size_bytes:
                     continue
                 text = f.read_text(encoding="utf-8", errors="ignore")
-            except Exception:
+            except Exception as e:
+                print(f"[collect_documents] Error reading file {f}: {e}")
                 continue
             meta = {
                 "path": str(f.resolve()),

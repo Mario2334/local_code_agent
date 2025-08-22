@@ -4,7 +4,7 @@
 name = "agno"
 version = "1.7.12"
 description = "Agno: a lightweight library for building Multi-Agent Systems"
-optional = true
+optional = false
 python-versions = "<4,>=3.7"
 groups = ["main"]
 markers = "extra == \"agno\""
@@ -160,7 +160,7 @@ trio = ["trio (>=0.26.1)"]
 name = "authlib"
 version = "1.6.1"
 description = "The ultimate Python library in building OAuth and OpenID Connect servers and clients."
-optional = true
+optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"weaviate\""
@@ -188,7 +188,7 @@ files = [
 name = "cffi"
 version = "1.17.1"
 description = "Foreign Function Interface for Python calling C code."
-optional = true
+optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 markers = "extra == \"weaviate\" and platform_python_implementation != \"PyPy\""
@@ -358,7 +358,7 @@ files = [
 name = "click"
 version = "8.1.8"
 description = "Composable command line interface toolkit"
-optional = true
+optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 markers = "extra == \"agno\""
@@ -387,7 +387,7 @@ files = [
 name = "cryptography"
 version = "43.0.3"
 description = "cryptography is a package which provides cryptographic recipes and primitives to Python developers."
-optional = true
+optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 markers = "extra == \"weaviate\""
@@ -438,7 +438,7 @@ test-randomorder = ["pytest-randomly"]
 name = "deprecation"
 version = "2.1.0"
 description = "A library to handle automated deprecations"
-optional = true
+optional = false
 python-versions = "*"
 groups = ["main"]
 markers = "extra == \"weaviate\""
@@ -466,7 +466,7 @@ files = [
 name = "docstring-parser"
 version = "0.17.0"
 description = "Parse Python docstrings in reST, Google and Numpydoc format"
-optional = true
+optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 markers = "extra == \"agno\""
@@ -536,7 +536,7 @@ tqdm = ["tqdm"]
 name = "gitdb"
 version = "4.0.12"
 description = "Git Object Database"
-optional = true
+optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 markers = "extra == \"agno\""
@@ -552,7 +552,7 @@ smmap = ">=3.0.1,<6"
 name = "gitpython"
 version = "3.1.45"
 description = "GitPython is a Python library used to interact with Git repositories"
-optional = true
+optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 markers = "extra == \"agno\""
@@ -572,7 +572,7 @@ test = ["coverage[toml]", "ddt (>=1.1.1,!=1.4.3)", "mock ; python_version < \"3.
 name = "grpcio"
 version = "1.74.0"
 description = "HTTP/2-based RPC framework"
-optional = true
+optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"weaviate\""
@@ -889,7 +889,7 @@ files = [
 name = "markdown-it-py"
 version = "3.0.0"
 description = "Python port of markdown-it. Markdown parsing, done right!"
-optional = true
+optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 markers = "extra == \"agno\""
@@ -986,7 +986,7 @@ files = [
 name = "mdurl"
 version = "0.1.2"
 description = "Markdown URL utilities"
-optional = true
+optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 markers = "extra == \"agno\""
@@ -1495,7 +1495,7 @@ xmp = ["defusedxml"]
 name = "protobuf"
 version = "6.32.0"
 description = ""
-optional = true
+optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"weaviate\""
@@ -1515,7 +1515,7 @@ files = [
 name = "pycparser"
 version = "2.22"
 description = "C parser in Python"
-optional = true
+optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 markers = "extra == \"weaviate\" and platform_python_implementation != \"PyPy\""
@@ -1662,7 +1662,7 @@ typing-extensions = ">=4.6.0,<4.7.0 || >4.7.0"
 name = "pydantic-settings"
 version = "2.10.1"
 description = "Settings management using Pydantic"
-optional = true
+optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"agno\""
@@ -1687,7 +1687,7 @@ yaml = ["pyyaml (>=6.0.1)"]
 name = "pygments"
 version = "2.19.2"
 description = "Pygments is a syntax highlighting package written in Python."
-optional = true
+optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 markers = "extra == \"agno\""
@@ -1703,10 +1703,9 @@ windows-terminal = ["colorama (>=0.4.6)"]
 name = "python-dotenv"
 version = "1.1.1"
 description = "Read key-value pairs from a .env file and set them as environment variables"
-optional = true
+optional = false
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"agno\""
 files = [
     {file = "python_dotenv-1.1.1-py3-none-any.whl", hash = "sha256:31f23644fe2602f88ff55e1f5c79ba497e01224ee7737937930c448e4d0e24dc"},
     {file = "python_dotenv-1.1.1.tar.gz", hash = "sha256:a8a6399716257f45be6a007360200409fce5cda2661e3dec71d23dc15f6189ab"},
@@ -1719,7 +1718,7 @@ cli = ["click (>=5.0)"]
 name = "python-multipart"
 version = "0.0.20"
 description = "A streaming multipart parser for Python"
-optional = true
+optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 markers = "extra == \"agno\""
@@ -1914,7 +1913,7 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 name = "rich"
 version = "14.1.0"
 description = "Render rich text, tables, progress bars, syntax highlighting, markdown and more to the terminal"
-optional = true
+optional = false
 python-versions = ">=3.8.0"
 groups = ["main"]
 markers = "extra == \"agno\""
@@ -2148,7 +2147,7 @@ type = ["importlib_metadata (>=7.0.2) ; python_version < \"3.10\"", "jaraco.deve
 name = "shellingham"
 version = "1.5.4"
 description = "Tool to Detect Surrounding Shell"
-optional = true
+optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 markers = "extra == \"agno\""
@@ -2161,7 +2160,7 @@ files = [
 name = "smmap"
 version = "5.0.2"
 description = "A pure Python implementation of a sliding window memory map manager"
-optional = true
+optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 markers = "extra == \"agno\""
@@ -2249,7 +2248,7 @@ testing = ["black (==22.3)", "datasets", "numpy", "pytest", "requests", "ruff"]
 name = "tomli"
 version = "2.2.1"
 description = "A lil' TOML parser"
-optional = true
+optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 markers = "extra == \"agno\""
@@ -2476,7 +2475,7 @@ tutorials = ["matplotlib", "pandas", "tabulate"]
 name = "typer"
 version = "0.16.1"
 description = "Typer, build great CLIs. Easy to code. Based on Python type hints."
-optional = true
+optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 markers = "extra == \"agno\""
@@ -2540,7 +2539,7 @@ zstd = ["zstandard (>=0.18.0)"]
 name = "validators"
 version = "0.35.0"
 description = "Python Data Validation for Humans™"
-optional = true
+optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"weaviate\""
@@ -2556,7 +2555,7 @@ crypto-eth-addresses = ["eth-hash[pycryptodome] (>=0.7.0)"]
 name = "weaviate-client"
 version = "4.16.9"
 description = "A python native Weaviate client"
-optional = true
+optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"weaviate\""
@@ -2584,4 +2583,4 @@ weaviate = ["weaviate-client"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.13"
-content-hash = "61b682aeec834451ab54f88f1a5f51801f622dcd416c6f20bdeaf20f8bfe1704"
+content-hash = "c36c911ce6aa4d15c8f83834860be1cdf6d9c0c5515a5e864279708254f7bcbf"
