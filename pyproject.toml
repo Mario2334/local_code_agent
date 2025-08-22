@@ -1,0 +1,41 @@
+[tool.poetry]
+name = "local-code-agent"
+version = "0.1.0"
+description = "Local code agent that can use Agno with optional Weaviate knowledge base."
+authors = ["Your Name <you@example.com>"]
+license = "MIT"
+readme = "README.md"
+keywords = ["agent", "agno", "weaviate", "llm"]
+packages = [
+  # Include packages (directories with __init__.py)
+  { include = "agents" },
+  { include = "services" }
+]
+# Also include top-level modules so console scripts can import them after installation
+include = [
+  "main.py",
+  "runner.py",
+  "config.py"
+]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.13"
+# Optional dependencies; the code handles absence gracefully
+agno = { version = "*", optional = true }
+weaviate-client = { version = "*", optional = true }
+sentence-transformers = { version = "*" }
+openai = { version = "*" }
+[tool.poetry.extras]
+# Install with: poetry install --with weaviate
+weaviate = ["weaviate-client"]
+# Install with: poetry install --with agno
+agno = ["agno"]
+# Or both: poetry install --with agno,weaviate
+
+[tool.poetry.scripts]
+local-code-agent = "main:main"
+local-code-agent-runner = "runner:run"
+
+[build-system]
+requires = ["poetry-core>=1.8.0"]
+build-backend = "poetry.core.masonry.api"
