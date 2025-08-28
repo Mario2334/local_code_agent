@@ -21,17 +21,38 @@ from frameworks.springboot.ingestor import collect_documents
 
 
 def build_plan_prompt(user_request: str) -> str:
-    """Wrap the user's request with clear instructions to produce a plan.
+    """Wrap the user's request with clear instructions to produce a JSON plan.
 
     The plan should leverage the ingested knowledge (codebase context) and be
-    actionable to make code changes. We request a structured, numbered plan.
+    actionable to make code changes. We request strictly valid JSON adhering to
+    the schema expected by downstream agents.
     """
     detail = settings.PLAN_DETAIL.lower()
     detail_instructions = {
         "brief": "Keep the plan to 5-8 concise steps.",
-        "normal": "Aim for 7-12 clear, numbered steps with short sub-bullets where needed.",
-        "detailed": "Provide 10-20 steps with sub-steps including file paths, function names, and validation checks.",
+        "normal": "Aim for 7-12 steps with clear, short descriptions.",
+        "detailed": "Provide 10-20 steps; include file paths, function names, and validation checks.",
     }.get(detail, "Aim for 7-12 clear, numbered steps.")
+
+    schema_hint = (
+        "Return ONLY valid JSON with this shape:\n"
+        "{\n"
+        "  \"version\": \"1.0\",\n"
+        "  \"detail\": \"brief|normal|detailed\",\n"
+        "  \"steps\": [\n"
+        "    {\n"
+        "      \"id\": 1,\n"
+        "      \"title\": \"Short title\",\n"
+        "      \"description\": \"What to do\",\n"
+        "      \"files\": [\"path/file.ext\"],\n"
+        "      \"commands\": [\"cli command\"],\n"
+        "      \"validation\": [\"how to verify\"],\n"
+        "      \"notes\": \"optional\"\n"
+        "    }\n"
+        "  ]\n"
+        "}\n"
+        "Do not include any commentary before or after the JSON."
+    )
 
     return (
         "You are a coding agent with access to a vector-backed knowledge base of the project code. "
@@ -42,8 +63,9 @@ def build_plan_prompt(user_request: str) -> str:
         "- Anticipate edge cases and note validation or tests to run.\n"
         "- Keep changes minimal to satisfy the user's request.\n"
         f"- {detail_instructions}\n\n"
-        "User request:\n" + user_request + "\n\n"
-        "Output only the plan as a numbered list."
+        f"Output detail level: {detail}.\n\n"
+        f"User request:\n{user_request}\n\n"
+        f"{schema_hint}"
     )
 
 def code_ingestor(code_path: str, framework: str = "springboot"):
@@ -121,7 +143,18 @@ def run(prompt: Optional[str] = None, plan: Optional[bool] = None) -> None:
         try:
             effective_prompt = build_plan_prompt(prompt) if plan_mode else prompt
             result = agent.run(effective_prompt)
-            print("[agent:result]", result)
+            if plan_mode:
+                # Parse structured JSON plan via Pydantic
+                try:
+                    from agents.planning import parse_plan_response
+                    plan_obj = parse_plan_response(str(result))
+                    import json as _json
+                    print("[agent:plan:json]", _json.dumps(plan_obj.model_dump(), indent=2))
+                except Exception as parse_err:
+                    print("[agent:plan:parse_error]", parse_err)
+                    print("[agent:raw]", result)
+            else:
+                print("[agent:result]", result)
         except Exception as e:
             print("[agent:error]", e)
 
