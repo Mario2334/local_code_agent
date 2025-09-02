@@ -1,0 +1,34 @@
+{
+  "name": "local_code_agent",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --import tsx src/test.ts",
+    "test-path": "node --import tsx src/test.ts",
+    "dev": "mastra dev",
+    "build": "mastra build",
+    "start": "mastra start"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "type": "module",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^1.3.24",
+    "@mastra/core": "^0.15.2",
+    "@mastra/libsql": "^0.13.7",
+    "@mastra/loggers": "^0.10.9",
+    "@mastra/memory": "^0.14.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "mastra": "^0.11.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

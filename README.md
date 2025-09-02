@@ -1,44 +1,140 @@
-# local-code-agent
+# Code Agent
 
-A small local code agent that can optionally use Agno with a Weaviate knowledge base.
+A TypeScript-based code analysis agent built with [Mastra AI](https://mastra.ai). It can collect, index, and search through your codebase using AI.
 
-## Requirements
-- Python 3.9–3.12
-- Poetry
+## 🚀 Features
 
-## Install
-- Base install (no optional deps):
-  - `poetry install`
-- With Agno:
-  - `poetry install --with agno`
-- With Weaviate client:
-  - `poetry install --with weaviate`
-- With both:
-  - `poetry install --with agno,weaviate`
+- **Code Collection**: Scan and index files from any project
+- **Smart Search**: Find code using text search with context
+- **AI Agent**: Ask questions about your codebase
+- **Multi-language**: Java, Python, JavaScript, TypeScript, and more
 
-## Run
-- Using the main entry point:
-  - `poetry run local-code-agent`
-- Using the runner entry point:
-  - `poetry run local-code-agent-runner`
-- Or directly with Python:
-  - `poetry run python main.py`
-  - `poetry run python -m runner`
+## 📋 Requirements
 
-## Configuration
-Environment variables (defaults shown in config.py):
-- `WEAVIATE_URL`: default `http://100.66.227.18:8080/`
-- `AGENT_TYPE`: default `agno`
-- `ENSURE_SCHEMA`: default `true`
+- Node.js >= 20.9.0
+- OpenAI API key (for AI features)
 
-## Notes
-- The application is resilient if optional dependencies are missing; it prints helpful guidance.
-- The Weaviate helper supports both v3 and v4 client styles on a best-effort basis.
+## 🛠️ Installation
 
-## Code Structure
-- runner.py: Orchestrates bootstrapping and delegates to modules.
-- db/weaviate_client.py: Weaviate client creation.
-- knowledge/base.py: Constructs Agno AgentKnowledge backed by Weaviate and an embedder.
-- frameworks/springboot/ingestor.py: Collects documents from a Spring Boot project.
+```bash
+# Clone and install
+git clone <repo-url>
+cd local_code_agent
+npm install
 
-To add a new framework, create a new folder under frameworks/<framework>/ingestor.py with a collect_documents function and wire it in runner.py or a new runner branch.
+# Set up environment
+cp .env.example .env
+# Add your OPENAI_API_KEY to .env
+```
+
+## 🚀 Usage
+
+### Quick Test
+```bash
+# Test with the included Python files
+npm test
+
+# Test with a specific project
+npm run test-path ./path/to/your/project
+```
+
+### Using the Mastra Agent
+```bash
+# Start the Mastra development server
+npm run dev
+# Then visit http://localhost:3000 to interact with the agent
+```
+
+### Programmatic Usage
+```typescript
+import { mastra } from './src/mastra/index.js';
+
+// Collect code files
+const workflow = mastra.getWorkflow('codeIngestWorkflow');
+const result = await workflow.execute({
+  root: './my-project',
+  framework: 'auto'
+});
+
+// Ask the agent questions  
+const agent = mastra.getAgent('codeAgent');
+const response = await agent.stream([{
+  role: 'user', 
+  content: 'What functions are defined in this codebase?'
+}]);
+```
+
+## 🏗️ Architecture
+
+### Components
+- **`collectCodeTool`**: Scans filesystem and indexes code files
+- **`codeSearchTool`**: Searches through indexed code with filters
+- **`codeAgent`**: AI agent that can use the tools to answer questions
+- **`codeIngestWorkflow`**: Automated workflow for code collection
+
+### Supported File Types
+- Source code: `.java`, `.py`, `.js`, `.ts`  
+- Config files: `.yml`, `.yaml`, `.json`, `.properties`
+- Build files: `pom.xml`, `build.gradle`, `package.json`
+- Documentation: `.md`, `README` files
+
+## 📁 Project Structure
+
+```
+src/
+├── mastra/
+│   ├── index.ts              # Main Mastra configuration
+│   ├── config.ts             # Environment configuration  
+│   ├── agents/
+│   │   └── code-agent.ts     # AI code analysis agent
+│   ├── tools/
+│   │   ├── code-collector.ts # File collection tool
+│   │   └── code-search.ts    # Code search tool
+│   └── workflows/
+│       └── code-ingest.ts    # Code collection workflow
+└── test.ts                   # Simple test runner
+```
+
+## ⚙️ Configuration
+
+Environment variables in `.env`:
+
+```bash
+# Required for AI features
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Optional settings
+CODE_PATH=.                   # Default path to scan
+INDEX_NAME=code_index         # Name for the index files  
+```
+
+## 🧪 Testing
+
+The test will:
+1. Scan the specified directory for code files
+2. Index them into a searchable format
+3. Perform a sample search to verify everything works
+
+```bash
+# Test with included Python backup files
+npm test
+
+# Test with your own project
+npm run test-path /path/to/your/code
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch  
+3. Make your changes
+4. Test with `npm test`
+5. Submit a pull request
+
+## 📝 License
+
+MIT License
+
+---
+
+**Note**: This project was converted from a Python/Agno implementation. The original Python code is preserved in the `backup/` directory.
