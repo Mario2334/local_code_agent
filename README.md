@@ -38,11 +38,28 @@ npm test
 npm run test-path ./path/to/your/project
 ```
 
+### Complete Workflow
+```bash
+# 1. Test your setup
+npm test
+
+# 2. Start development server
+npm run dev
+
+# 3. Visit http://localhost:4111 to use the web interface
+# 4. Or use the API at http://localhost:4111/api
+```
+
 ### Using the Mastra Agent
 ```bash
-# Start the Mastra development server
+# Development mode (with hot reload)
 npm run dev
-# Then visit http://localhost:3000 to interact with the agent
+# Visit http://localhost:4111 to interact with the agent
+
+# Production mode
+npm run build  # Build the application first
+npm start      # Start the production server
+# API available at http://localhost:4111/api
 ```
 
 ### Programmatic Usage

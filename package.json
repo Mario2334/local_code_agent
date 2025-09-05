@@ -2,6 +2,7 @@
   "name": "local_code_agent",
   "version": "1.0.0",
   "main": "index.js",
+  "description": "TypeScript-based code analysis agent built with Mastra AI for collecting, indexing, and searching codebases",
   "scripts": {
     "test": "node --import tsx src/test.ts",
     "test-path": "node --import tsx src/test.ts",
@@ -9,10 +10,9 @@
     "build": "mastra build",
     "start": "mastra start"
   },
-  "keywords": [],
+  "keywords": ["ai", "code-analysis", "mastra", "agent", "search", "typescript"],
   "author": "",
-  "license": "ISC",
-  "description": "",
+  "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=20.9.0"
