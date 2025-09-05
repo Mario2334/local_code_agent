@@ -10,7 +10,14 @@
     "build": "mastra build",
     "start": "mastra start"
   },
-  "keywords": ["ai", "code-analysis", "mastra", "agent", "search", "typescript"],
+  "keywords": [
+    "ai",
+    "code-analysis",
+    "mastra",
+    "agent",
+    "search",
+    "typescript"
+  ],
   "author": "",
   "license": "MIT",
   "type": "module",
@@ -19,10 +26,13 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.3.24",
+    "@ai-sdk/openai-compatible": "^1.0.15",
+    "@mastra/chroma": "^0.11.8",
     "@mastra/core": "^0.15.2",
     "@mastra/libsql": "^0.13.7",
     "@mastra/loggers": "^0.10.9",
     "@mastra/memory": "^0.14.2",
+    "@mastra/rag": "^1.2.4",
     "zod": "^3.25.76"
   },
   "devDependencies": {
