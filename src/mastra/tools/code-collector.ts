@@ -155,7 +155,7 @@ export const collectCodeTool = createTool({
         });
 
         await vectorStore.upsert({
-          indexName: "mastra-code",
+          indexName: "code_agent",
           vectors: embeddings,
           metadata: chunks.map((_, i) => ({
             path: fileData.path,
