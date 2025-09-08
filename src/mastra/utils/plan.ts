@@ -61,6 +61,7 @@ export function buildPlanPrompt(userRequest: string, detail?: string): string {
     '- Include minimal, safe changes first; note any config, env, or dependency updates.\n' +
     '- Anticipate edge cases and note validation or tests to run.\n' +
     '- Keep changes minimal to satisfy the user\'s request.\n' +
+    '- For each step: if concrete CLI commands are required, include them under "commands"; if no commands are required, leave "commands" empty and write a precise, actionable "description" of what to do in that step.\n' +
     `- ${detailInstructions}\n\n` +
     `Output detail level: ${effectiveDetail}.\n\n` +
     `User request:\n${userRequest}\n\n` +
