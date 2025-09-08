@@ -4,12 +4,12 @@ import { LibSQLStore } from '@mastra/libsql';
 import { codeIngestWorkflow } from './workflows/code-ingest';
 import { codeAgent } from './agents/code-agent';
 import { planningWorkflow } from './workflows/planning';
-import { runUserTaskWorkflow } from './workflows/run-user-task';
+import { planningAgent } from './agents/planning-agent';
 import { ChromaVector } from '@mastra/chroma';
 
 export const mastra = new Mastra({
-  workflows: { codeIngestWorkflow, planningWorkflow, runUserTaskWorkflow },
-  agents: { codeAgent },
+  workflows: { codeIngestWorkflow, planningWorkflow },
+  agents: { codeAgent, planningAgent },
   vectors: {
     chroma: new ChromaVector(),
   },
@@ -21,6 +21,3 @@ export const mastra = new Mastra({
     level: 'info',
   }),
 });
-
-export { runUserTask } from './agents/runner';
-export { runUserTaskWorkflow } from './workflows/run-user-task';

@@ -162,6 +162,7 @@ export const collectCodeTool = createTool({
             name: fileData.name,
             framework: fileData.framework,
             language: fileData.language,
+            content: fileData.content,
             chunkIndex: i,
           })),
         });
