@@ -1,6 +1,6 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
-import { parsePlanResponse, PlanResponseSchema } from '../utils/plan';
+import {parsePlanResponse, PlanResponseSchema, PlanStepSchema} from '../utils/plan';
 import { generatePlanFromAgent } from '../agents/planning-agent';
 import { executePlanStepOnce } from '../agents/execution-agent';
 
@@ -27,11 +27,11 @@ const parsePlanStep = createStep({
   inputSchema: z.object({
     raw: z.string().describe('Raw LLM output that may contain text around a JSON plan'),
   }),
-  outputSchema: PlanResponseSchema,
+  outputSchema: z.array(PlanStepSchema),
   execute: async ({ inputData }) => {
     if (!inputData?.raw) throw new Error('Missing input.raw');
     const plan = parsePlanResponse(inputData.raw);
-    return plan;
+    return plan.steps;
   },
 });
 
@@ -39,7 +39,7 @@ const parsePlanStep = createStep({
 const executePlanStep = createStep({
   id: 'execute-plan-step',
   description: 'Execute exactly one step of the parsed plan: run commands if provided, otherwise determine and perform necessary actions, then return progress',
-  inputSchema: PlanResponseSchema,
+  inputSchema: PlanStepSchema,
   outputSchema: z.object({
     stepId: z.number().int().positive(),
     success: z.boolean(),
@@ -51,13 +51,11 @@ const executePlanStep = createStep({
         stderr: z.string(),
         error: z.string().optional(),
       })
-    ),
-    nextStepId: z.number().int().positive().nullable(),
-    done: z.boolean(),
+    )
   }),
   execute: async ({ inputData }) => {
     // Default to executing step 1 within the planning workflow extension
-    const res = await executePlanStepOnce({ plan: inputData, stepId: 1 });
+    const res = await executePlanStepOnce({ planStep: inputData });
     return {
       stepId: res.stepId,
       success: res.success,
@@ -89,6 +87,6 @@ export const planningWorkflow = createWorkflow({
 })
   .then(generatePlanStep)
   .then(parsePlanStep)
-  .then(executePlanStep);
-
+  // .then(executePlanStep);
+    .foreach(executePlanStep)
 planningWorkflow.commit();

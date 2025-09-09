@@ -2,7 +2,7 @@ import { Agent } from '@mastra/core/agent';
 import { z } from 'zod';
 import path from 'path';
 import { openai } from '@ai-sdk/openai';
-import { PlanStep, PlanResponseSchema } from '../utils/plan';
+import {PlanStep, PlanResponseSchema, PlanStepSchema} from '../utils/plan';
 import { MCPClient } from '@mastra/mcp';
 
 export type CommandResult = {
@@ -23,8 +23,7 @@ export type StepExecutionResult = {
 };
 
 export const StepExecutionInputSchema = z.object({
-  plan: PlanResponseSchema,
-  stepId: z.number().int().positive().default(1),
+  planStep: PlanStepSchema,
   cwd: z.string().optional().describe('Working directory for MCP filesystem root'),
   env: z.record(z.string()).optional().describe('Additional environment variables (reserved)'),
 });
@@ -76,16 +75,10 @@ Rules:
  * The LLM will decide which tools to call to apply the step's changes.
  */
 export async function executePlanStepOnce(input: StepExecutionInput): Promise<StepExecutionResult> {
-  const { plan, stepId } = input;
+  const { planStep } = input;
   const cwd = "/Users/sanket/projects/pakama/pakama_be";
 
-  if (!plan?.steps?.length) {
-    throw new Error('Plan has no steps');
-  }
-  const step = plan.steps.find((s) => s.id === stepId) ?? null;
-  if (!step) {
-    throw new Error(`Step with id ${stepId} not found in plan`);
-  }
+  const step = planStep;
 
   // Build a concise instruction for the agent
   const filesList = (step.files || []).map((f) => `- ${f}`).join('\n');
@@ -123,7 +116,7 @@ export async function executePlanStepOnce(input: StepExecutionInput): Promise<St
 
   const commandResults: CommandResult[] = [
     {
-      command: `llm-mcp-execute-step-${stepId}`,
+      command: `llm-mcp-execute-step-${planStep.id}`,
       code: success ? 0 : null,
       stdout: resultText,
       stderr: success ? '' : (errorMsg || ''),
@@ -131,16 +124,9 @@ export async function executePlanStepOnce(input: StepExecutionInput): Promise<St
     },
   ];
 
-  // Determine next step id
-  const stepIndex = plan.steps.findIndex((s) => s.id === stepId);
-  const next = stepIndex >= 0 && stepIndex + 1 < plan.steps.length ? plan.steps[stepIndex + 1].id : null;
-
   return {
     step,
-    stepId,
     commandResults,
-    success,
-    nextStepId: next,
-    done: next === null,
+    success
   };
 }
