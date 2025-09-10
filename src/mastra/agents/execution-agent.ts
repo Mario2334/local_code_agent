@@ -91,6 +91,17 @@ export async function executePlanStepOnce(input: StepExecutionInput): Promise<St
 
   const userMessage = `Execute plan step ${step.id}: ${step.title}\n\nDescription:\n${step.description || ''}\n\nRelevant files (may not exist yet):\n${filesList || '- (unspecified)'}\n\n${commandsHint}\n\nValidation goals (post-change checks you should consider):\n${validations || '- (none specified)'}\n\nUse only the MCP CLI tools to run commands within the allowed directory. Be safe and minimal. If changes are made, summarize them and the command outputs briefly.`;
 
+  // Logging: commands being passed to MCP server
+  if (hasCommands) {
+    try {
+      console.log(`[MCP][executePlanStep] Step ${step.id} commands ->`, step.commands);
+    } catch {}
+  } else {
+    try {
+      console.log(`[MCP][executePlanStep] Step ${step.id} has no explicit commands; agent will determine actions via MCP tools.`);
+    } catch {}
+  }
+
   let resultText = '';
   let success = true;
   let errorMsg: string | undefined = undefined;
@@ -125,6 +136,11 @@ export async function executePlanStepOnce(input: StepExecutionInput): Promise<St
       // ignore disconnect errors
     }
   }
+
+  // Logging: output returned by MCP/agent execution
+  try {
+    console.log(`[MCP][executePlanStep] Step ${step.id} output <-`, success ? resultText : (errorMsg || ''));
+  } catch {}
 
   const commandResults: CommandResult[] = [
     {

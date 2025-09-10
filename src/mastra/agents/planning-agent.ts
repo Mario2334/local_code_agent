@@ -27,7 +27,9 @@ You are a planning-only assistant. Your sole job is to output a strict JSON plan
 - Be specific and reference files/paths where possible based on the retrieved context.
 ${CHROMA_PROMPT}
 `,
-  model: openai('gpt-5'),
+  model: openai('gpt-5',{
+    reasoningEffort: "high"
+  }),
   tools: {
     chromaQueryTool
   }
