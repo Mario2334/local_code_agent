@@ -33,6 +33,7 @@ export type StepExecutionInput = z.infer<typeof StepExecutionInputSchema>;
 async function createExecutionAgent(cwd: string) {
   // Create an MCP client rooted at the provided cwd
   const mcp = new MCPClient({
+    id: `execution-agent:${cwd}:${typeof process !== 'undefined' ? process.pid : 'nopid'}:${Date.now()}:${Math.random().toString(36).slice(2)}`,
     servers: {
       "cli-mcp-server": {
         "command": "uvx",
@@ -94,8 +95,11 @@ export async function executePlanStepOnce(input: StepExecutionInput): Promise<St
   let success = true;
   let errorMsg: string | undefined = undefined;
 
+  let mcp: MCPClient | undefined;
   try {
-    const { agent } = await createExecutionAgent(cwd);
+    const created = await createExecutionAgent(cwd);
+    const { agent } = created;
+    mcp = created.mcp;
 
     // Try common Mastra Agent call shapes defensively
     const maybe: any = (await (agent as any).run?.(userMessage))
@@ -112,6 +116,14 @@ export async function executePlanStepOnce(input: StepExecutionInput): Promise<St
     success = false;
     errorMsg = e?.message ? String(e.message) : 'Execution agent failed';
     resultText = '';
+  } finally {
+    try {
+      if (mcp && typeof (mcp as any).disconnect === 'function') {
+        await (mcp as any).disconnect();
+      }
+    } catch {
+      // ignore disconnect errors
+    }
   }
 
   const commandResults: CommandResult[] = [
