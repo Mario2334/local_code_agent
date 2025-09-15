@@ -8,7 +8,12 @@
 </head>
 <body>
   <header>
-    <h1>Code Agent UI</h1>
+    <div class="header-row">
+      <h1>Code Agent UI</h1>
+      <div class="header-actions">
+        <button id="toggleNav" class="secondary" aria-pressed="false" aria-label="Toggle navigation sidebar">Hide Nav</button>
+      </div>
+    </div>
     <div class="config">
       <label>
         Mastra API Base URL:
@@ -78,7 +83,7 @@
           <textarea id="chatInput" rows="3" placeholder="Ask a code question or request..."></textarea>
         </div>
         <div class="actions">
-          <button id="chatStream">Send (Stream)</button>
+          <button id="chatStream">Send</button>
         </div>
         <div class="output" id="chatOutput"></div>
       </section>

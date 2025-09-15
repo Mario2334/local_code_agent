@@ -31,19 +31,22 @@ This UI is static and detachable. You can:
 
 ## Usage
 1. At the top, verify the API Base URL (`http://localhost:4111/api`) and click "Ping API".
-2. Planning Workflow:
+2. Collapsible Navbar:
+   - Use the "Hide Nav" / "Show Nav" button in the header to toggle the sidebar.
+   - The UI remembers your preference across reloads.
+3. Planning Workflow:
    - Enter a Task and choose Detail.
    - Click "Run (Stream)" to stream the workflow via `/api/workflows/planning/stream`.
    - Watch the Planning Output for real-time events and command outputs.
    - If streaming isn’t supported, click "Run (Async Fallback)". Use the Run ID controls to fetch the run and its execution result.
-3. Code Chat:
+4. Code Chat:
    - Click "Refresh Agents" to load agents (`GET /api/agents`).
    - Select the agent that matches the code agent (auto-selects “Chat Code Agent” if present) or set an override ID.
-   - Enter your message and click "Send (Stream)" to use `/api/agents/{agentId}/stream/ui`.
-   - The Chat Output shows all streamed chunks and the final assistant text.
-4. Observability:
+   - Enter your message and click "Send" to use `/api/agents/{agentId}/generate`.
+   - The Chat Output shows the final assistant response once ready (no streaming).
+5. Observability:
    - Click "Fetch Recent Traces" to call `/api/observability/traces`.
-5. Logs Panel:
+6. Logs Panel:
    - Shows detailed steps, including request URLs, payloads, headers, raw streamed chunks, parsed JSON, and errors.
 
 ## Endpoints used (from OpenAPI)
@@ -54,7 +57,7 @@ This UI is static and detachable. You can:
   - `GET /api/workflows/planning/runs/{runId}/execution-result`
   - Agents:
     - `GET /api/agents` (discover agent IDs)
-    - `POST /api/agents/{agentId}/stream/ui` (stream chat)
+    - `POST /api/agents/{agentId}/generate` (non-stream chat)
   - System & Observability:
     - `GET /api` (ping)
     - `GET /api/observability/traces`

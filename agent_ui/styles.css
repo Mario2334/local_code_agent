@@ -3,16 +3,23 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: system-ui, -apple
 body { min-height: 100vh; display: flex; flex-direction: column; }
 
 header { padding: 16px; background: #121632; border-bottom: 1px solid #252a4a; position: sticky; top: 0; z-index: 2; }
-header h1 { margin: 0 0 8px 0; font-size: 20px; }
+header h1 { margin: 0; font-size: 20px; }
+header .header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 10px; }
+header .header-actions { display: flex; gap: 8px; }
 header .config { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 header input { width: 380px; max-width: 90vw; padding: 8px; border: 1px solid #39406b; background: #0c0f21; color: #e8e9f0; border-radius: 6px; }
 header button { background: #2d6cdf; border: none; color: white; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
 header .status { font-size: 12px; color: #9aa4c9; }
 
 /* Layout */
-main.layout { display: grid; grid-template-columns: 240px 1fr; gap: 16px; padding: 16px; align-items: start; flex: 1 1 auto; padding-bottom: 40px; }
-.sidebar { position: sticky; top: 72px; align-self: start; background: #121632; border-right: 1px solid #252a4a; border-radius: 12px; padding: 12px; height: fit-content; }
+main.layout { display: grid; grid-template-columns: 240px 1fr; gap: 16px; padding: 16px; align-items: start; flex: 1 1 auto; padding-bottom: 40px; transition: grid-template-columns 0.2s ease; }
+.sidebar { position: sticky; top: 72px; align-self: start; background: #121632; border-right: 1px solid #252a4a; border-radius: 12px; padding: 12px; height: fit-content; overflow: hidden; transition: width 0.2s ease, padding 0.2s ease, border-color 0.2s ease; }
 .content { display: grid; grid-template-columns: 1fr; gap: 16px; }
+
+/* Collapsed nav */
+body.nav-collapsed main.layout { grid-template-columns: 0 1fr; }
+body.nav-collapsed .sidebar { width: 0; padding: 0; border-right-color: transparent; }
+body.nav-collapsed .nav-group-title, body.nav-collapsed .nav-link { opacity: 0; pointer-events: none; }
 
 /* Panels */
 .panel { background: #121632; border: 1px solid #252a4a; border-radius: 12px; padding: 16px; display: none; }
@@ -110,6 +117,18 @@ footer { padding: 16px; color: #9aa4c9; border-top: 1px solid #252a4a; }
 
 /* When terminal is open, reserve space so content isn't hidden */
 body.terminal-open main.layout { padding-bottom: 44vh; }
+
+/* Loader (chat typing) */
+.chat-loader { display: inline-flex; align-items: center; gap: 10px; padding: 8px 0; color: #9aa4c9; }
+.chat-loader .typing { display: inline-flex; gap: 6px; align-items: center; }
+.chat-loader .typing span { width: 8px; height: 8px; background: #2d6cdf; border-radius: 50%; opacity: 0.5; animation: chat-bounce 1.1s infinite ease-in-out; box-shadow: 0 0 10px rgba(45,108,223,0.45); }
+.chat-loader .typing span:nth-child(2) { animation-delay: 0.18s; }
+.chat-loader .typing span:nth-child(3) { animation-delay: 0.36s; }
+.chat-loader .hint { font-size: 12px; color: #a6b3e6; opacity: 0.9; }
+@keyframes chat-bounce {
+  0%, 80%, 100% { transform: translateY(0) scale(0.7); opacity: 0.4; }
+  40% { transform: translateY(-4px) scale(1.05); opacity: 1; }
+}
 
 /* Responsive */
 @media (max-width: 860px) {

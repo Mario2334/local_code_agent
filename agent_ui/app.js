@@ -8,6 +8,7 @@
   const apiBaseInput = $('#apiBase');
   const apiStatus = $('#apiStatus');
   const autoScroll = $('#autoScroll');
+  const toggleNavBtn = document.querySelector('#toggleNav');
   // Drawer elements
   const logsDrawerEl = document.querySelector('#logsDrawer');
   const autoScrollDrawer = document.querySelector('#autoScrollDrawer');
@@ -32,6 +33,24 @@
   // Default active panel
   const savedPanel = localStorage.getItem('ui_active_panel');
   showPanel(savedPanel && document.getElementById(savedPanel) ? savedPanel : 'planningSection');
+
+  // Nav collapse toggle
+  function setNavCollapsed(collapsed){
+    document.body.classList.toggle('nav-collapsed', collapsed);
+    if (toggleNavBtn){
+      toggleNavBtn.setAttribute('aria-pressed', String(collapsed));
+      toggleNavBtn.textContent = collapsed ? 'Show Nav' : 'Hide Nav';
+    }
+    localStorage.setItem('ui_nav_collapsed', collapsed ? '1' : '0');
+  }
+  if (toggleNavBtn){
+    toggleNavBtn.addEventListener('click', () => {
+      const collapsed = document.body.classList.contains('nav-collapsed');
+      setNavCollapsed(!collapsed);
+    });
+    const savedCollapsed = localStorage.getItem('ui_nav_collapsed');
+    setNavCollapsed(savedCollapsed === '1');
+  }
 
   // Persist API base
   const savedApiBase = localStorage.getItem('mastra_api_base');
@@ -309,7 +328,9 @@
   function ChatRenderer(thread){
     this.thread = thread;
     this.assistant = null;
-    this.assistantText = '';
+    // Maintain separate buffers for thinking (reasoning) and visible answer
+    this.thinkingText = '';
+    this.answerText = '';
     this.toolBlocks = new Map(); // toolCallId -> {callEl,resultEl}
   }
   ChatRenderer.prototype.addUser = function(text){
@@ -333,6 +354,27 @@
     return this.assistant.querySelector('.body');
   };
 
+  // Show a beautiful typing loader while awaiting response
+  ChatRenderer.prototype.showLoader = function(){
+    const body = this.ensureAssistant();
+    let loader = body.querySelector('.chat-loader');
+    if (!loader){
+      loader = document.createElement('div');
+      loader.className = 'chat-loader';
+      loader.innerHTML = '<div class="typing" aria-live="polite" aria-label="Assistant is typing">\
+        <span></span><span></span><span></span>\
+      </div><div class="hint">Thinking…</div>';
+      body.appendChild(loader);
+    }
+    // Ensure visible
+    loader.style.display = 'inline-flex';
+  };
+  ChatRenderer.prototype.hideLoader = function(){
+    const body = this.ensureAssistant();
+    const loader = body.querySelector('.chat-loader');
+    if (loader){ loader.remove(); }
+  };
+
   ChatRenderer.prototype.ensureThinkingBlock = function(){
     const body = this.ensureAssistant();
     let block = body.querySelector('.block.thinking');
@@ -350,9 +392,26 @@
 
   ChatRenderer.prototype.appendThinkingText = function(delta){
     if (!delta) return;
-    this.assistantText += delta;
+    this.thinkingText += delta;
     const content = this.ensureThinkingBlock();
-    content.innerHTML = renderMarkdown(this.assistantText);
+    content.innerHTML = renderMarkdown(this.thinkingText);
+    this.thread.parentElement.scrollTop = this.thread.parentElement.scrollHeight;
+  };
+  ChatRenderer.prototype.appendAnswerText = function(delta){
+    if (!delta) return;
+    this.answerText += delta;
+    const body = this.ensureAssistant();
+    // Live preview in a Response block if present, otherwise keep for finalize
+    let resp = body.querySelector('.block.response');
+    if (!resp){
+      resp = makeBlock('response', 'Response', undefined, false);
+      const content = document.createElement('div');
+      content.className = 'md';
+      resp._details.appendChild(content);
+      body.appendChild(resp);
+    }
+    const md = resp.querySelector('.md');
+    if (md) md.innerHTML = renderMarkdown(this.answerText);
     this.thread.parentElement.scrollTop = this.thread.parentElement.scrollHeight;
   };
   ChatRenderer.prototype.addToolCall = function(call){
@@ -382,13 +441,20 @@
   // Create a visible final response block and avoid duplicating answer in Thinking
   ChatRenderer.prototype.finalize = function(){
     const body = this.ensureAssistant();
-    // Create Response block (expanded by default)
-    const resp = makeBlock('response', 'Response', undefined, false);
-    const content = document.createElement('div');
-    content.className = 'md';
-    content.innerHTML = renderMarkdown(this.assistantText || '');
-    resp._details.appendChild(content);
-    body.appendChild(resp);
+
+    // Ensure Response block exists
+    let resp = body.querySelector('.block.response');
+    if (!resp){
+      resp = makeBlock('response', 'Response', undefined, false);
+      const content = document.createElement('div');
+      content.className = 'md';
+      resp._details.appendChild(content);
+      body.appendChild(resp);
+    }
+    // Render only the answer text in the Response block; fallback to thinking if answer is empty
+    const finalHtml = renderMarkdown(this.answerText || (this.thinkingText ? this.thinkingText : ''));
+    const md = resp.querySelector('.md');
+    if (md) md.innerHTML = finalHtml;
 
     // Replace thinking content with a small note to avoid duplication
     const thinkMd = body.querySelector('.block.thinking .md');
@@ -444,20 +510,24 @@
     const agentId = override || agentSelect.value;
     if (!agentId) return alert('No agent selected');
 
-    const url = `${apiBase()}/agents/${encodeURIComponent(agentId)}/stream`;
+    const url = `${apiBase()}/agents/${encodeURIComponent(agentId)}/generate`;
     const runId = `run_${Date.now()}`;
     const payload = {
       messages: [{ role: 'user', content: message }],
       runId,
-      format: 'mastra',
-      savePerStep: true,
+      // Avoid stream-specific flags; send minimal payload for generate
       toolChoice: 'auto'
     };
 
     const thread = createChatThread();
     const renderer = new ChatRenderer(thread);
     renderer.addUser(message);
-    log('Chat', 'POST stream', { url, payload });
+    // Show loader and disable the send button
+    const sendBtn = document.querySelector('#chatStream');
+    const prevBtnText = sendBtn ? sendBtn.textContent : null;
+    if (sendBtn){ sendBtn.disabled = true; sendBtn.textContent = 'Sending…'; }
+    renderer.showLoader();
+    log('Chat', 'POST generate', { url, payload });
 
     try {
       const res = await fetch(url, {
@@ -465,53 +535,114 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      const contentType = res.headers.get('content-type') || '';
       log('Chat', 'Response headers', Object.fromEntries(res.headers.entries()));
-      let allowPlainText = false;
-      await handleStream(res, (evt) => {
-        // JSON payloads (SSE/NDJSON)
-        if (evt.json){
-          const t = extractAssistantText(evt.json);
-          if (t) renderer.appendThinkingText(t);
-          // Receiving JSON assistant deltas indicates the stream has truly started
-          allowPlainText = true;
-          return;
-        }
-        // Raw text chunks: parse our frame protocol
-        if (evt.raw){
-          parseStreamLines(evt.raw, (frame) => {
-            switch(frame.type){
-              case 'f': /* meta frame start */ allowPlainText = true; break;
-              case '9': allowPlainText = true; renderer.addToolCall(frame.data); break;
-              case 'a': allowPlainText = true; renderer.addToolResult(frame.data); break;
-              case 'e': /* end */ break;
-              case 'token': allowPlainText = true; renderer.appendThinkingText(frame.data); break;
-              case 'text': if (allowPlainText) renderer.appendThinkingText(frame.data); break;
-              default: if (allowPlainText) renderer.appendThinkingText(String(frame.data || '')); break;
-            }
-          });
-        }
-      });
-      // After stream has fully finished, render final response and collapse thinking content duplication
+      if (!res.ok) {
+        const errText = await res.text().catch(()=> '');
+        throw new Error(`HTTP ${res.status}: ${errText || res.statusText}`);
+      }
+      // Prefer JSON, but also support plain text
+      let data;
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        data = await res.text();
+      }
+      const answer = extractFinalAnswer(data);
+      renderer.appendAnswerText(answer);
       renderer.finalize();
-      log('Chat', 'Stream completed for runId ' + runId);
+      log('Chat', 'Generate completed for runId ' + runId, { data, answer });
     } catch (e) {
-      log('Chat', 'Stream error', String(e));
+      log('Chat', 'Generate error', String(e));
       const err = makeMsg('assistant');
       err.appendChild(makeBlock('error', 'Error', String(e), false));
       thread.appendChild(err);
+    } finally {
+      try { renderer.hideLoader(); } catch {}
+      const btn = document.querySelector('#chatStream');
+      if (btn){ btn.disabled = false; btn.textContent = (prevBtnText != null ? prevBtnText : 'Send'); }
     }
   });
 
-  function extractAssistantText(obj){
+  function extractFinalAnswer(data){
     try {
-      if (!obj) return '';
-      if (obj.delta && typeof obj.delta === 'string') return obj.delta;
-      if (obj.content && typeof obj.content === 'string') return obj.content;
-      if (Array.isArray(obj.parts)) return obj.parts.map(p => p.text || p.content || '').filter(Boolean).join('');
-      if (obj.message && typeof obj.message === 'string') return obj.message;
-      if (obj.data && typeof obj.data === 'string') return obj.data;
-    } catch {}
+      if (data == null) return '';
+      if (typeof data === 'string') return data;
+      if (typeof data.text === 'string') return data.text;
+      if (typeof data.output === 'string') return data.output;
+      // Some agent responses may be like { message: { role, content } }
+      if (data.message) {
+        const m = data.message;
+        if (typeof m === 'string') return m;
+        if (typeof m.content === 'string') return m.content;
+        if (Array.isArray(m.content)) return m.content.map(coercePartToString).join('');
+      }
+      // Or { messages: [...] }
+      if (Array.isArray(data.messages)) {
+        const last = [...data.messages].reverse().find(m => m.role === 'assistant') || data.messages[data.messages.length - 1];
+        if (last) {
+          if (typeof last.content === 'string') return last.content;
+          if (Array.isArray(last.content)) return last.content.map(coercePartToString).join('');
+        }
+      }
+      // Or { result: "" }
+      if (typeof data.result === 'string') return data.result;
+      // Fallback to JSON string
+      return JSON.stringify(data);
+    } catch {
+      try { return String(data); } catch { return ''; }
+    }
+  }
+
+  function coercePartToString(p){
+    if (p == null) return '';
+    if (typeof p === 'string') return p;
+    if (typeof p.text === 'string') return p.text;
+    if (typeof p.content === 'string') return p.content;
     return '';
+  }
+
+  // Extract deltas from JSON events separating thinking vs answer content
+  function extractAssistantDeltas(obj){
+    const out = { thinking: '', answer: '' };
+    try {
+      if (!obj) return out;
+      // Common Mastra/AI SDK shapes
+      // 1) { type: 'delta', part: { type: 'reasoning'|'text', text: '...' } }
+      if (obj.part && obj.part.type && typeof obj.part.text === 'string'){
+        if (String(obj.part.type).toLowerCase().includes('reason')) out.thinking = obj.part.text;
+        else out.answer = obj.part.text;
+        return out;
+      }
+      // 2) { type: 'reasoning', delta: '...' } or { type: 'text', delta: '...' }
+      if (obj.type && typeof obj.delta === 'string'){
+        if (String(obj.type).toLowerCase().includes('reason')) out.thinking = obj.delta;
+        else out.answer = obj.delta;
+        return out;
+      }
+      // 3) { reasoning: '...', content: '...' }
+      if (typeof obj.reasoning === 'string') out.thinking = obj.reasoning;
+      if (typeof obj.content === 'string') out.answer = obj.content;
+      if (out.thinking || out.answer) return out;
+      // 4) { parts: [{type,text}...] }
+      if (Array.isArray(obj.parts)){
+        const think = [];
+        const ans = [];
+        for (const p of obj.parts){
+          const t = p && (p.text || p.content);
+          if (!t) continue;
+          if (p.type && String(p.type).toLowerCase().includes('reason')) think.push(t);
+          else ans.push(t);
+        }
+        out.thinking = think.join('');
+        out.answer = ans.join('');
+        return out;
+      }
+      // 5) Fallback generic
+      if (typeof obj.message === 'string') out.answer = obj.message;
+      if (typeof obj.data === 'string') out.answer = obj.data;
+    } catch {}
+    return out;
   }
 
   const OUTPUT_MAX_CHARS = 250000; // cap to keep UI responsive
