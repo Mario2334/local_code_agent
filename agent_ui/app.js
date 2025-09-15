@@ -127,16 +127,28 @@
     return String(s).replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   }
 
-  // Minimal, safe Markdown renderer focusing on code snippets and basics
+  // Enhanced Markdown renderer with developer-focused features
   function renderMarkdown(md){
     if (md == null) return '';
     let text = String(md);
+    
     // Extract fenced code blocks first to avoid interfering with inline parsing
     const codeBlocks = [];
     text = text.replace(/```([a-z0-9_+-]+)?\n([\s\S]*?)```/gi, (_, lang, code) => {
       const idx = codeBlocks.length;
-      codeBlocks.push({ lang: lang || '', code });
+      codeBlocks.push({ lang: lang || 'text', code });
       return `@@CODEBLOCK_${idx}@@`;
+    });
+    
+    // Extract file references (e.g., `file.js`, `/path/to/file.py`)
+    const fileRefs = [];
+    text = text.replace(/`([^`]*\.[a-z0-9]+)`/gi, (match, file) => {
+      if (file.includes('/') || file.includes('\\') || /\.(js|ts|py|java|cpp|c|go|rs|php|rb|css|html|json|xml|yml|yaml|md|txt|sh|bat)$/i.test(file)) {
+        const idx = fileRefs.length;
+        fileRefs.push(file);
+        return `@@FILEREF_${idx}@@`;
+      }
+      return match;
     });
 
     // Escape the rest
@@ -170,16 +182,174 @@
       })
       .join('\n');
 
-    // Restore code blocks as <pre><code>
+    // Restore code blocks with enhanced styling
     text = text.replace(/@@CODEBLOCK_(\d+)@@/g, (m, n) => {
-      const { lang, code } = codeBlocks[Number(n)] || { lang: '', code: '' };
+      const { lang, code } = codeBlocks[Number(n)] || { lang: 'text', code: '' };
       const safe = escapeHtml(code);
-      const cls = lang ? ` class="lang-${lang}"` : '';
-      return `<pre><code${cls}>${safe}</code></pre>`;
+      const langIcon = getLanguageIcon(lang);
+      const langName = lang.charAt(0).toUpperCase() + lang.slice(1);
+      return `
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">
+              <span class="code-icon">${langIcon}</span>
+              ${langName}
+            </span>
+            <button class="copy-code" onclick="copyCodeBlock(this)" title="Copy code">
+              <span class="copy-icon">📋</span>
+            </button>
+          </div>
+          <pre><code class="lang-${lang}">${safe}</code></pre>
+        </div>
+      `;
+    });
+    
+    // Restore file references with special styling
+    text = text.replace(/@@FILEREF_(\d+)@@/g, (m, n) => {
+      const file = fileRefs[Number(n)] || '';
+      const fileIcon = getFileIcon(file);
+      return `<span class="file-ref" title="File: ${escapeHtml(file)}">
+        <span class="file-icon">${fileIcon}</span>
+        <code>${escapeHtml(file)}</code>
+      </span>`;
     });
 
     return text;
   }
+  
+  function getLanguageIcon(lang) {
+    const icons = {
+      javascript: '🟨', js: '🟨', typescript: '🔷', ts: '🔷',
+      python: '🐍', py: '🐍', java: '☕', cpp: '⚙️', c: '⚙️',
+      go: '🐹', rust: '🦀', php: '🐘', ruby: '💎', rb: '💎',
+      html: '🌐', css: '🎨', json: '📄', xml: '📄',
+      bash: '💻', sh: '💻', sql: '🗄️', yaml: '⚙️', yml: '⚙️',
+      text: '📝', plain: '📝'
+    };
+    return icons[lang.toLowerCase()] || '📄';
+  }
+  
+  function getFileIcon(filename) {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    const icons = {
+      js: '🟨', ts: '🔷', py: '🐍', java: '☕', cpp: '⚙️', c: '⚙️',
+      go: '🐹', rs: '🦀', php: '🐘', rb: '💎',
+      html: '🌐', css: '🎨', json: '📄', xml: '📄',
+      sh: '💻', bat: '💻', sql: '🗄️', yml: '⚙️', yaml: '⚙️',
+      md: '📝', txt: '📝', log: '📋'
+    };
+    return icons[ext] || '📄';
+  }
+  
+  // Handle vnext streaming event format
+  function handleVNextStreamEvent(data, renderer, onDelta, onError, getCurrentResponse) {
+    if (!data || !data.type) return;
+    
+    log('Chat', 'Stream event', { type: data.type, runId: data.runId });
+    
+    switch (data.type) {
+      case 'start':
+        log('Chat', 'Stream started', data.payload);
+        break;
+        
+      case 'step-start':
+        log('Chat', 'Step started', data.payload);
+        break;
+        
+      case 'step-delta':
+        // Handle step delta (text content streaming)
+        if (data.payload && data.payload.delta) {
+          if (data.payload.delta.content) {
+            renderer.appendAnswerText(data.payload.delta.content);
+            onDelta(data.payload.delta.content);
+          }
+          if (data.payload.delta.reasoning) {
+            renderer.appendThinkingText(data.payload.delta.reasoning);
+          }
+        }
+        break;
+        
+      case 'step-finish':
+        log('Chat', 'Step finished', data.payload);
+        // Extract final text from step result
+        if (data.payload && data.payload.output && data.payload.output.text) {
+          const text = data.payload.output.text;
+          const currentResponse = getCurrentResponse ? getCurrentResponse() : '';
+          if (text && text !== currentResponse) {
+            renderer.appendAnswerText(text);
+            onDelta(text);
+          }
+        }
+        
+        // Handle tool calls if present
+        if (data.payload && data.payload.output && data.payload.output.toolCalls) {
+          data.payload.output.toolCalls.forEach(toolCall => {
+            renderer.addToolCall(toolCall);
+          });
+        }
+        
+        // Check for errors
+        if (data.payload && data.payload.stepResult && data.payload.stepResult.reason === 'error') {
+          let errorMsg = 'The agent encountered an error while processing your request.';
+          
+          // Try to extract more specific error information
+          if (data.payload.output && data.payload.output.steps && data.payload.output.steps[0]) {
+            const step = data.payload.output.steps[0];
+            if (step.finishReason === 'error') {
+              errorMsg = 'The AI model encountered an error during processing. This might be due to:';
+              errorMsg += '\n\u2022 Model configuration issues';
+              errorMsg += '\n\u2022 Invalid request parameters';
+              errorMsg += '\n\u2022 Service unavailability';
+              errorMsg += '\n\nPlease try again or contact support if the issue persists.';
+            }
+          }
+          
+          onError(errorMsg);
+          return;
+        }
+        break;
+        
+      case 'finish':
+        log('Chat', 'Stream finished', data.payload);
+        // Final text extraction
+        if (data.payload && data.payload.output && data.payload.output.text) {
+          const text = data.payload.output.text;
+          if (text) {
+            renderer.appendAnswerText(text);
+            onDelta(text);
+          }
+        }
+        break;
+        
+      case 'error':
+        log('Chat', 'Stream error', data.payload);
+        let errorMsg = 'An error occurred while processing your request.';
+        if (data.payload && data.payload.error && data.payload.error.message) {
+          errorMsg = data.payload.error.message;
+        }
+        onError(errorMsg);
+        break;
+        
+      default:
+        log('Chat', 'Unknown stream event type', { type: data.type, payload: data.payload });
+    }
+  }
+  
+  // Global function for copying code blocks
+  window.copyCodeBlock = function(button) {
+    const codeBlock = button.closest('.code-block');
+    const code = codeBlock.querySelector('code').textContent;
+    navigator.clipboard.writeText(code).then(() => {
+      const icon = button.querySelector('.copy-icon');
+      const originalIcon = icon.textContent;
+      icon.textContent = '✅';
+      setTimeout(() => {
+        icon.textContent = originalIcon;
+      }, 2000);
+    }).catch(err => {
+      console.error('Failed to copy code:', err);
+    });
+  };
 
   function setStatus(ok, text){
     apiStatus.textContent = `Status: ${text}`;
@@ -281,14 +451,60 @@
     }
   }
 
-  // Chat streaming with chatbot UI
-  function createChatThread(){
+  // Enhanced chat with thread management
+  let currentThreadId = null;
+  let messageHistory = [];
+  let isThinkingMode = false;
+  
+  function generateThreadId() {
+    return `thread_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+  
+  function createChatThread(clearHistory = false){
     chatOutput.classList.add('chat');
-    chatOutput.innerHTML = '';
-    const thread = document.createElement('div');
-    thread.className = 'chat-thread';
-    chatOutput.appendChild(thread);
+    if (clearHistory) {
+      chatOutput.innerHTML = '';
+      messageHistory = [];
+      currentThreadId = generateThreadId();
+    }
+    
+    let thread = chatOutput.querySelector('.chat-thread');
+    if (!thread) {
+      thread = document.createElement('div');
+      thread.className = 'chat-thread';
+      chatOutput.appendChild(thread);
+    }
+    
+    // Add chat controls if not present
+    if (!chatOutput.querySelector('.chat-controls')) {
+      const controls = createChatControls();
+      chatOutput.insertBefore(controls, thread);
+    }
+    
     return thread;
+  }
+  
+  function createChatControls() {
+    const controls = document.createElement('div');
+    controls.className = 'chat-controls';
+    controls.innerHTML = `
+      <div class="chat-info">
+        <span class="thread-info">Thread: <code id="currentThreadDisplay">${currentThreadId || 'new'}</code></span>
+        <span class="message-count">${messageHistory.length} messages</span>
+      </div>
+      <div class="chat-actions">
+        <button id="clearChat" class="secondary small" title="Start new conversation">
+          <span class="icon">🆕</span> New Chat
+        </button>
+        <button id="toggleThinking" class="secondary small ${isThinkingMode ? 'active' : ''}" title="Toggle thinking mode">
+          <span class="icon">🧠</span> ${isThinkingMode ? 'Simple' : 'Detailed'}
+        </button>
+        <button id="exportChat" class="secondary small" title="Export conversation">
+          <span class="icon">📄</span> Export
+        </button>
+      </div>
+    `;
+    return controls;
   }
 
   function makeMsg(role, text){
@@ -510,24 +726,56 @@
     const agentId = override || agentSelect.value;
     if (!agentId) return alert('No agent selected');
 
-    const url = `${apiBase()}/agents/${encodeURIComponent(agentId)}/generate`;
+    // Initialize thread if needed
+    if (!currentThreadId) {
+      currentThreadId = generateThreadId();
+    }
+    
+    // Add user message to history
+    const userMessage = { role: 'user', content: message };
+    messageHistory.push(userMessage);
+    
+    // Use streaming endpoint for better UX
+    const useStreaming = true;
+    const url = useStreaming 
+      ? `${apiBase()}/agents/${encodeURIComponent(agentId)}/stream/vnext`
+      : `${apiBase()}/agents/${encodeURIComponent(agentId)}/generate/vnext`;
+    
     const runId = `run_${Date.now()}`;
+    const resourceId = `user_${Date.now()}`; // In a real app, this would be the actual user ID
+    
     const payload = {
-      messages: [{ role: 'user', content: message }],
-      runId,
-      // Avoid stream-specific flags; send minimal payload for generate
-      toolChoice: 'auto'
+      messages: messageHistory,
+      threadId: currentThreadId,
+      resourceId: resourceId,
+      runId: runId,
+      toolChoice: 'auto',
+      memory: {
+        threadId: currentThreadId,
+        resourceId: resourceId
+      },
+      instructions: isThinkingMode ? 
+        'Provide detailed reasoning and show your thought process. Be thorough in explaining technical concepts and code.' :
+        'Be concise and direct. Focus on practical solutions and clear explanations.'
     };
 
     const thread = createChatThread();
     const renderer = new ChatRenderer(thread);
     renderer.addUser(message);
+    
+    // Update chat controls
+    updateChatControls();
+    
     // Show loader and disable the send button
     const sendBtn = document.querySelector('#chatStream');
     const prevBtnText = sendBtn ? sendBtn.textContent : null;
-    if (sendBtn){ sendBtn.disabled = true; sendBtn.textContent = 'Sending…'; }
+    if (sendBtn){ sendBtn.disabled = true; sendBtn.textContent = 'Thinking…'; }
     renderer.showLoader();
-    log('Chat', 'POST generate', { url, payload });
+    
+    // Clear input
+    $('#chatInput').value = '';
+    
+    log('Chat', useStreaming ? 'POST stream' : 'POST generate', { url, payload });
 
     try {
       const res = await fetch(url, {
@@ -541,21 +789,132 @@
         const errText = await res.text().catch(()=> '');
         throw new Error(`HTTP ${res.status}: ${errText || res.statusText}`);
       }
-      // Prefer JSON, but also support plain text
-      let data;
-      if (contentType.includes('application/json')) {
-        data = await res.json();
+      
+      let fullResponse = '';
+      
+      if (useStreaming && (contentType.includes('text/event-stream') || contentType.includes('text/plain'))) {
+        // Handle streaming response
+        let isError = false;
+        let errorMessage = '';
+        
+        await handleStream(res, (evt) => {
+          if (evt.raw) {
+            // Parse vnext streaming format: data: {json}
+            try {
+              const lines = evt.raw.split('\n').filter(line => line.trim());
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  const jsonStr = line.substring(6);
+                  if (jsonStr === '[DONE]') {
+                    log('Chat', 'Stream completed');
+                    continue;
+                  }
+                  
+                  try {
+                    const data = JSON.parse(jsonStr);
+                    handleVNextStreamEvent(data, renderer, (delta) => {
+                      fullResponse += delta;
+                    }, (error) => {
+                      isError = true;
+                      errorMessage = error;
+                    }, () => fullResponse);
+                  } catch (parseError) {
+                    log('Chat', 'Failed to parse streaming JSON', { line, error: parseError.message });
+                  }
+                }
+              }
+            } catch (parseError) {
+              log('Chat', 'Failed to parse streaming chunk', parseError.message);
+            }
+          }
+          if (evt.json) {
+            handleVNextStreamEvent(evt.json, renderer, (delta) => {
+              fullResponse += delta;
+            }, (error) => {
+              isError = true;
+              errorMessage = error;
+            }, () => fullResponse);
+          }
+        });
+        
+        if (isError) {
+          throw new Error(errorMessage || 'Streaming request failed');
+        }
       } else {
-        data = await res.text();
+        // Handle non-streaming response
+        let data;
+        if (contentType.includes('application/json')) {
+          data = await res.json();
+        } else {
+          data = await res.text();
+        }
+        const answer = extractFinalAnswer(data);
+        renderer.appendAnswerText(answer);
+        fullResponse = answer;
       }
-      const answer = extractFinalAnswer(data);
-      renderer.appendAnswerText(answer);
+      
       renderer.finalize();
-      log('Chat', 'Generate completed for runId ' + runId, { data, answer });
+      
+      // Add assistant message to history
+      if (fullResponse.trim()) {
+        messageHistory.push({ role: 'assistant', content: fullResponse.trim() });
+        updateChatControls();
+        
+        // Add follow-up suggestions
+        setTimeout(() => {
+          addFollowUpQuestions(fullResponse);
+        }, 500);
+      }
+      
+      log('Chat', 'Chat completed for runId ' + runId, { responseLength: fullResponse.length });
     } catch (e) {
-      log('Chat', 'Generate error', String(e));
+      log('Chat', 'Chat error', String(e));
+      
+      // If streaming failed and we haven't tried non-streaming yet, try fallback
+      if (useStreaming && e.message && (e.message.includes('Streaming request failed') || e.message.includes('AI model encountered an error'))) {
+        log('Chat', 'Streaming failed, trying non-streaming fallback');
+        
+        // Update UI to show fallback attempt
+        const sendBtn = document.querySelector('#chatStream');
+        if (sendBtn) sendBtn.textContent = 'Retrying...';
+        
+        try {
+          // Try with generate endpoint instead
+          const fallbackUrl = `${apiBase()}/agents/${encodeURIComponent(agentId)}/generate/vnext`;
+          const fallbackRes = await fetch(fallbackUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          
+          if (fallbackRes.ok) {
+            const fallbackData = await fallbackRes.json();
+            const answer = extractFinalAnswer(fallbackData);
+            renderer.appendAnswerText(answer);
+            renderer.finalize();
+            
+            if (answer.trim()) {
+              messageHistory.push({ role: 'assistant', content: answer.trim() });
+              updateChatControls();
+              
+              setTimeout(() => {
+                addFollowUpQuestions(answer);
+              }, 500);
+            }
+            
+            log('Chat', 'Fallback successful');
+            return; // Exit successfully
+          }
+        } catch (fallbackError) {
+          log('Chat', 'Fallback also failed', String(fallbackError));
+        }
+      }
+      
+      // Show error to user
       const err = makeMsg('assistant');
-      err.appendChild(makeBlock('error', 'Error', String(e), false));
+      const errorTitle = useStreaming ? 'Streaming Error' : 'Generation Error';
+      const errorDetails = e.message || String(e);
+      err.appendChild(makeBlock('error', errorTitle, errorDetails, false));
       thread.appendChild(err);
     } finally {
       try { renderer.hideLoader(); } catch {}
@@ -901,6 +1260,174 @@
     return { events, consumed: pos };
   }
 
+  // Chat control functions
+  function updateChatControls() {
+    const threadDisplay = document.getElementById('currentThreadDisplay');
+    const messageCountEl = document.querySelector('.message-count');
+    
+    if (threadDisplay) {
+      threadDisplay.textContent = currentThreadId || 'new';
+    }
+    if (messageCountEl) {
+      messageCountEl.textContent = `${messageHistory.length} messages`;
+    }
+  }
+  
+  function addChatControlsEventListeners() {
+    // Clear chat
+    document.addEventListener('click', (e) => {
+      if (e.target.id === 'clearChat' || e.target.closest('#clearChat')) {
+        if (confirm('Start a new conversation? This will clear the current chat history.')) {
+          createChatThread(true);
+          updateChatControls();
+        }
+      }
+    });
+    
+    // Toggle thinking mode
+    document.addEventListener('click', (e) => {
+      if (e.target.id === 'toggleThinking' || e.target.closest('#toggleThinking')) {
+        isThinkingMode = !isThinkingMode;
+        const btn = document.getElementById('toggleThinking');
+        if (btn) {
+          btn.classList.toggle('active', isThinkingMode);
+          btn.querySelector('.icon').nextSibling.textContent = isThinkingMode ? ' Simple' : ' Detailed';
+        }
+        log('Chat', `Thinking mode ${isThinkingMode ? 'enabled' : 'disabled'}`);
+      }
+    });
+    
+    // Export chat
+    document.addEventListener('click', (e) => {
+      if (e.target.id === 'exportChat' || e.target.closest('#exportChat')) {
+        exportChatHistory();
+      }
+    });
+  }
+  
+  function exportChatHistory() {
+    if (messageHistory.length === 0) {
+      alert('No messages to export');
+      return;
+    }
+    
+    const exportData = {
+      threadId: currentThreadId,
+      timestamp: new Date().toISOString(),
+      messages: messageHistory,
+      messageCount: messageHistory.length
+    };
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `chat_${currentThreadId}_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    log('Chat', 'Chat history exported', { messageCount: messageHistory.length });
+  }
+  
+  // Add follow-up questions functionality
+  function addFollowUpQuestions(response) {
+    const suggestions = generateFollowUpQuestions(response);
+    if (suggestions.length > 0) {
+      const thread = document.querySelector('.chat-thread');
+      if (thread) {
+        const suggestionsContainer = createSuggestionsContainer(suggestions);
+        thread.appendChild(suggestionsContainer);
+      }
+    }
+  }
+  
+  function generateFollowUpQuestions(response) {
+    const suggestions = [];
+    const text = response.toLowerCase();
+    
+    // Code-related follow-ups
+    if (text.includes('function') || text.includes('method') || text.includes('class')) {
+      suggestions.push('Can you show me an example?');
+      suggestions.push('How would I test this?');
+    }
+    
+    if (text.includes('error') || text.includes('bug') || text.includes('issue')) {
+      suggestions.push('How can I debug this?');
+      suggestions.push('What are common causes?');
+    }
+    
+    if (text.includes('performance') || text.includes('optimize') || text.includes('slow')) {
+      suggestions.push('How can I improve performance?');
+      suggestions.push('What metrics should I track?');
+    }
+    
+    // Always include these generic developer questions
+    suggestions.push('Explain this in more detail');
+    suggestions.push('Show me the best practices');
+    suggestions.push('What are the alternatives?');
+    
+    return suggestions.slice(0, 3); // Limit to 3 suggestions
+  }
+  
+  function createSuggestionsContainer(suggestions) {
+    const container = document.createElement('div');
+    container.className = 'follow-up-suggestions';
+    container.innerHTML = `
+      <div class="suggestions-header">
+        <span class="suggestions-icon">💡</span>
+        <span class="suggestions-label">Follow up:</span>
+      </div>
+      <div class="suggestions-list">
+        ${suggestions.map(suggestion => 
+          `<button class="suggestion-btn" onclick="sendSuggestion('${escapeHtml(suggestion)}')">
+            ${escapeHtml(suggestion)}
+          </button>`
+        ).join('')}
+      </div>
+    `;
+    return container;
+  }
+  
+  // Global function for suggestion buttons
+  window.sendSuggestion = function(suggestion) {
+    document.getElementById('chatInput').value = suggestion;
+    document.getElementById('chatStream').click();
+  };
+  
+  // Add keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    // Ctrl/Cmd + Enter to send message
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      const chatInput = document.getElementById('chatInput');
+      const sendBtn = document.getElementById('chatStream');
+      if (chatInput && sendBtn && chatInput.value.trim() && !sendBtn.disabled) {
+        sendBtn.click();
+      }
+    }
+    
+    // Escape to clear input
+    if (e.key === 'Escape') {
+      const chatInput = document.getElementById('chatInput');
+      if (chatInput && document.activeElement === chatInput) {
+        chatInput.value = '';
+      }
+    }
+  });
+  
+  // Auto-resize chat input
+  const chatInput = document.getElementById('chatInput');
+  if (chatInput) {
+    chatInput.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+    });
+  }
+  
+  // Initialize chat controls event listeners
+  addChatControlsEventListeners();
+  
   // Initial load
   loadAgents();
 })();

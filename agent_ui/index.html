@@ -3,8 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Code Agent UI</title>
+  <title>⚡ Code Agent UI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles.css" />
+  <meta name="description" content="Modern AI Code Agent Interface">
+  <meta name="theme-color" content="#3b82f6">
 </head>
 <body>
   <header>
@@ -42,7 +47,7 @@
 
     <div class="content" id="content">
       <section id="planningSection" class="panel">
-        <h2>Code Agent - Planning Workflow</h2>
+        <h2>⚙️ Code Agent - Planning Workflow</h2>
         <p>Invoke the planning workflow (id: <code>planning</code>). Streams real-time steps, reasoning, and command outputs.</p>
         <div class="form-row">
           <label>Task</label>
@@ -70,7 +75,7 @@
       </section>
 
       <section id="chatSection" class="panel chat-panel">
-        <h2>Code Chat - codeAgent</h2>
+        <h2>💬 Code Chat - codeAgent</h2>
         <p>Chat with the code agent. Auto-detects agent by name “Chat Code Agent”, but you can override.</p>
         <div class="form-row">
           <label>Agent</label>
@@ -80,16 +85,19 @@
         </div>
         <div class="form-row">
           <label>Message</label>
-          <textarea id="chatInput" rows="3" placeholder="Ask a code question or request..."></textarea>
+          <div class="input-container">
+            <textarea id="chatInput" rows="3" placeholder="Ask a coding question, request help with debugging, or discuss technical concepts..."></textarea>
+            <div class="input-hint">💡 Press <kbd>Ctrl+Enter</kbd> to send, <kbd>Esc</kbd> to clear</div>
+          </div>
         </div>
         <div class="actions">
-          <button id="chatStream">Send</button>
+          <button id="chatStream">Send Message</button>
         </div>
         <div class="output" id="chatOutput"></div>
       </section>
 
       <section id="observabilitySection" class="panel">
-        <h2>Observability (Optional)</h2>
+        <h2>🔍 Observability (Optional)</h2>
         <div class="actions">
           <button id="fetchTraces">Fetch Recent Traces</button>
         </div>
@@ -97,7 +105,7 @@
       </section>
 
       <section id="logSection" class="panel">
-        <h2>Logs</h2>
+        <h2>📄 Logs</h2>
         <div class="log-controls">
           <button id="clearLogs">Clear Logs</button>
           <label><input type="checkbox" id="autoScroll" checked /> Auto-scroll</label>

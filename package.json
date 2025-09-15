@@ -25,6 +25,7 @@
     "node": ">=20.9.0"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.17",
     "@ai-sdk/openai": "^1.3.24",
     "@ai-sdk/openai-compatible": "^1.0.15",
     "@mastra/chroma": "^0.11.8",

@@ -1,5 +1,6 @@
 import { Agent } from '@mastra/core/agent';
 import { openai } from '@ai-sdk/openai';
+import { anthropic } from "@ai-sdk/anthropic";
 import {createVectorQueryTool} from "@mastra/rag";
 import {CHROMA_PROMPT} from "@mastra/chroma"
 
@@ -16,10 +17,9 @@ You are a senior code analysis and implementation assistant for Q&A.
 
 Behavior:
 - Answer technical/code questions grounded in the project's indexed codebase.
-- Always use the Chroma vector query tool to retrieve relevant context before answering specifics.
+- Always use the Chroma vector query tool to code saved in that db
 - Provide precise references: include file paths and short code snippets from retrieved results.
 - Explain architecture and trade-offs concisely; suggest minimal, safe changes when asked for improvements.
-- Do NOT produce project planning JSON; if asked to plan, politely explain that planning is handled by the Planning Agent/workflow.
 - Return answers in Markdown format.
 
 Tools:
@@ -31,7 +31,8 @@ Domains:
 Always ground answers in retrieved code context before claiming specifics about implementations.
 ${CHROMA_PROMPT}
   `,
-  model: openai('gpt-5-mini'),
+  // model: openai('gpt-5-mini'),
+  model: anthropic("claude-3-5-haiku-latest"),
   tools: {
     chromaQueryTool
   }
