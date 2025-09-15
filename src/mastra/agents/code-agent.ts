@@ -9,6 +9,7 @@ const chromaQueryTool = createVectorQueryTool({
   model: openai.embedding("text-embedding-3-small"),
 });
 export const codeAgent = new Agent({
+  id: 'code-agent-stream',
   name: 'Chat Code Agent',
   instructions: `
 You are a senior code analysis and implementation assistant for Q&A.

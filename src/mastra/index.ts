@@ -20,4 +20,9 @@ export const mastra = new Mastra({
     name: 'Code Agent',
     level: 'info',
   }),
+  server: {
+    build: {
+      swaggerUI: true
+    }
+  }
 });

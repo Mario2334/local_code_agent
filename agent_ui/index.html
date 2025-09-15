@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Code Agent UI</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Code Agent UI</h1>
+    <div class="config">
+      <label>
+        Mastra API Base URL:
+        <input id="apiBase" value="http://localhost:4111/api" />
+      </label>
+      <button id="pingApi">Ping API</button>
+      <span id="apiStatus" class="status">Status: unknown</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar" aria-label="Primary Navigation">
+      <nav class="nav" role="navigation">
+        <div class="nav-group">
+          <div class="nav-group-title">Code</div>
+          <a href="#" class="nav-link" data-target="planningSection" aria-controls="planningSection">Code agent workflow</a>
+          <a href="#" class="nav-link" data-target="chatSection" aria-controls="chatSection">Code chat</a>
+        </div>
+        <div class="nav-group">
+          <div class="nav-group-title">Observability</div>
+          <a href="#" class="nav-link" data-target="observabilitySection" aria-controls="observabilitySection">Observability</a>
+          <a href="#" class="nav-link" data-target="logSection" aria-controls="logSection">Logs</a>
+        </div>
+      </nav>
+    </aside>
+
+    <div class="content" id="content">
+      <section id="planningSection" class="panel">
+        <h2>Code Agent - Planning Workflow</h2>
+        <p>Invoke the planning workflow (id: <code>planning</code>). Streams real-time steps, reasoning, and command outputs.</p>
+        <div class="form-row">
+          <label>Task</label>
+          <textarea id="planningTask" rows="3" placeholder="Describe the coding task or change you want to plan..."></textarea>
+        </div>
+        <div class="form-row">
+          <label>Detail</label>
+          <select id="planningDetail">
+            <option value="normal" selected>normal</option>
+            <option value="brief">brief</option>
+            <option value="detailed">detailed</option>
+          </select>
+        </div>
+        <div class="actions">
+          <button id="runPlanningStream">Run (Stream)</button>
+          <button id="runPlanningAsync">Run (Async Fallback)</button>
+        </div>
+        <div class="subactions">
+          <label>Run ID</label>
+          <input id="planningRunId" placeholder="Auto-filled when available" />
+          <button id="fetchPlanningRun">Fetch Run</button>
+          <button id="fetchPlanningExec">Fetch Execution Result</button>
+        </div>
+        <div class="output" id="planningOutput"></div>
+      </section>
+
+      <section id="chatSection" class="panel chat-panel">
+        <h2>Code Chat - codeAgent</h2>
+        <p>Chat with the code agent. Auto-detects agent by name “Chat Code Agent”, but you can override.</p>
+        <div class="form-row">
+          <label>Agent</label>
+          <select id="agentSelect"></select>
+          <input id="agentIdOverride" placeholder="Or specify agentId manually" />
+          <button id="refreshAgents">Refresh Agents</button>
+        </div>
+        <div class="form-row">
+          <label>Message</label>
+          <textarea id="chatInput" rows="3" placeholder="Ask a code question or request..."></textarea>
+        </div>
+        <div class="actions">
+          <button id="chatStream">Send (Stream)</button>
+        </div>
+        <div class="output" id="chatOutput"></div>
+      </section>
+
+      <section id="observabilitySection" class="panel">
+        <h2>Observability (Optional)</h2>
+        <div class="actions">
+          <button id="fetchTraces">Fetch Recent Traces</button>
+        </div>
+        <div class="output" id="tracesOutput"></div>
+      </section>
+
+      <section id="logSection" class="panel">
+        <h2>Logs</h2>
+        <div class="log-controls">
+          <button id="clearLogs">Clear Logs</button>
+          <label><input type="checkbox" id="autoScroll" checked /> Auto-scroll</label>
+        </div>
+        <div id="logs" class="logs"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Bottom expandable terminal drawer for logs -->
+  <div id="terminalDrawer" class="terminal-drawer" aria-label="Logs terminal" aria-expanded="false">
+    <div class="terminal-header">
+      <button id="toggleTerminal" class="terminal-toggle" aria-controls="terminalDrawer" aria-expanded="false">▲</button>
+      <span class="terminal-title">Logs</span>
+      <div class="terminal-actions">
+        <label class="terminal-autoscroll"><input type="checkbox" id="autoScrollDrawer" checked /> Auto-scroll</label>
+        <button id="clearLogsDrawer" class="secondary">Clear</button>
+      </div>
+    </div>
+    <div class="terminal-body">
+      <div id="logsDrawer" class="logs"></div>
+    </div>
+  </div>
+ 
+   <footer>
+    <p>Detachable static UI. You can copy this folder standalone and adjust the API base URL above.</p>
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>
