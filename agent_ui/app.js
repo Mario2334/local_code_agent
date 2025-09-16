@@ -21,6 +21,20 @@
   function showPanel(id){
     panels.forEach(p => p.classList.toggle('active', p.id === id));
     links.forEach(a => a.classList.toggle('active', a.getAttribute('data-target') === id));
+
+    // Hide chat section and its nav link when in code agent workflow (planningSection)
+    const chatSection = document.getElementById('chatSection');
+    const chatNavLink = document.querySelector('.nav-link[data-target="chatSection"]');
+    const inCodeAgentWorkflow = (id === 'planningSection');
+    if (chatSection) {
+      // Ensure chat panel is fully hidden when in code agent workflow
+      chatSection.style.display = inCodeAgentWorkflow ? 'none' : '';
+    }
+    if (chatNavLink) {
+      // Hide the nav link to chat when in code agent workflow
+      chatNavLink.style.display = inCodeAgentWorkflow ? 'none' : '';
+    }
+
     localStorage.setItem('ui_active_panel', id);
   }
   links.forEach(a => {
