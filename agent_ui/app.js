@@ -22,18 +22,6 @@
     panels.forEach(p => p.classList.toggle('active', p.id === id));
     links.forEach(a => a.classList.toggle('active', a.getAttribute('data-target') === id));
 
-    // Hide chat section and its nav link when in code agent workflow (planningSection)
-    const chatSection = document.getElementById('chatSection');
-    const chatNavLink = document.querySelector('.nav-link[data-target="chatSection"]');
-    const inCodeAgentWorkflow = (id === 'planningSection');
-    if (chatSection) {
-      // Ensure chat panel is fully hidden when in code agent workflow
-      chatSection.style.display = inCodeAgentWorkflow ? 'none' : '';
-    }
-    if (chatNavLink) {
-      // Hide the nav link to chat when in code agent workflow
-      chatNavLink.style.display = inCodeAgentWorkflow ? 'none' : '';
-    }
 
     localStorage.setItem('ui_active_panel', id);
   }
@@ -53,7 +41,10 @@
     document.body.classList.toggle('nav-collapsed', collapsed);
     if (toggleNavBtn){
       toggleNavBtn.setAttribute('aria-pressed', String(collapsed));
-      toggleNavBtn.textContent = collapsed ? 'Show Nav' : 'Hide Nav';
+      const icon = toggleNavBtn.querySelector('.nav-icon');
+      if (icon) {
+        icon.textContent = collapsed ? '☰' : '✕';
+      }
     }
     localStorage.setItem('ui_nav_collapsed', collapsed ? '1' : '0');
   }
@@ -90,27 +81,89 @@
     const excess = el.childElementCount - MAX_LOG_ENTRIES;
     if (excess > 0){
       for (let i = 0; i < excess; i++){
-        el.removeChild(el.firstElementChild);
+        if (el.firstElementChild) {
+          el.removeChild(el.firstElementChild);
+        }
       }
     }
+  }
+
+  function ensureLogContent(container) {
+    if (!container) return null;
+    let content = container.querySelector('.log-content');
+    if (!content) {
+      content = document.createElement('div');
+      content.className = 'log-content';
+      container.appendChild(content);
+    }
+    return content;
+  }
+
+  function getLogLevel(scope, message) {
+    const lowerScope = scope.toLowerCase();
+    const lowerMessage = message.toLowerCase();
+    
+    if (lowerScope.includes('error') || lowerMessage.includes('error') || lowerMessage.includes('failed')) {
+      return 'error';
+    }
+    if (lowerScope.includes('warn') || lowerMessage.includes('warn') || lowerMessage.includes('warning')) {
+      return 'warning';
+    }
+    if (lowerScope.includes('success') || lowerMessage.includes('success') || lowerMessage.includes('completed')) {
+      return 'success';
+    }
+    return 'info';
   }
 
   function log(scope, message, details){
     const div = document.createElement('div');
     div.className = 'log-entry';
-    const time = document.createElement('div');
+    
+    const level = getLogLevel(scope, message);
+    div.setAttribute('data-level', level);
+    
+    const time = document.createElement('span');
     time.className = 'time';
-    time.textContent = ts();
+    time.textContent = new Date().toLocaleTimeString('en-US', { 
+      hour12: false, 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit' 
+    });
+    
+    const scopeSpan = document.createElement('span');
+    scopeSpan.className = 'scope';
+    scopeSpan.textContent = scope.toUpperCase();
+    
+    const msgSpan = document.createElement('span');
+    msgSpan.className = 'msg';
+    msgSpan.textContent = message;
+    
     const head = document.createElement('div');
-    head.innerHTML = `<span class="scope">[${scope}]</span> <span class="msg">${escapeHtml(message)}</span>`;
-    div.appendChild(time);
+    head.appendChild(time);
+    head.appendChild(scopeSpan);
+    head.appendChild(msgSpan);
+    
     div.appendChild(head);
+    
     if (details !== undefined) {
       const det = document.createElement('details');
       const sum = document.createElement('summary');
-      sum.textContent = 'details';
+      sum.textContent = '▶ details';
+      sum.style.cursor = 'pointer';
+      sum.style.color = 'var(--text-muted)';
+      sum.style.fontSize = '11px';
+      sum.style.marginTop = 'var(--spacing-xs)';
       det.appendChild(sum);
       const pre = document.createElement('pre');
+      pre.style.background = 'var(--bg-surface)';
+      pre.style.border = '1px solid var(--border-primary)';
+      pre.style.borderRadius = 'var(--radius-sm)';
+      pre.style.padding = 'var(--spacing-sm)';
+      pre.style.marginTop = 'var(--spacing-xs)';
+      pre.style.fontSize = '11px';
+      pre.style.maxHeight = '200px';
+      pre.style.overflow = 'auto';
       let text;
       try {
         text = (typeof details === 'string') ? details : JSON.stringify(details, null, 2);
@@ -124,16 +177,28 @@
       det.appendChild(pre);
       div.appendChild(det);
     }
+    
     // Append to main logs panel
-    logsEl.appendChild(div);
-    if (autoScroll && autoScroll.checked) logsEl.scrollTop = logsEl.scrollHeight;
-    trimLogsContainer(logsEl);
+    const mainContent = ensureLogContent(logsEl);
+    if (mainContent) {
+      mainContent.appendChild(div);
+      if (autoScroll && autoScroll.checked) {
+        mainContent.scrollTop = mainContent.scrollHeight;
+      }
+      trimLogsContainer(mainContent);
+    }
+    
     // Mirror to drawer if present
     if (logsDrawerEl) {
       const clone = div.cloneNode(true);
-      logsDrawerEl.appendChild(clone);
-      if (autoScrollDrawer && autoScrollDrawer.checked) logsDrawerEl.scrollTop = logsDrawerEl.scrollHeight;
-      trimLogsContainer(logsDrawerEl);
+      const drawerContent = ensureLogContent(logsDrawerEl);
+      if (drawerContent) {
+        drawerContent.appendChild(clone);
+        if (autoScrollDrawer && autoScrollDrawer.checked) {
+          drawerContent.scrollTop = drawerContent.scrollHeight;
+        }
+        trimLogsContainer(drawerContent);
+      }
     }
   }
 
@@ -386,14 +451,19 @@
 
   // Logs controls
   function clearAllLogs(){
-    logsEl.innerHTML = '';
-    if (logsDrawerEl) logsDrawerEl.innerHTML = '';
+    const mainContent = logsEl.querySelector('.log-content');
+    if (mainContent) mainContent.innerHTML = '';
+    
+    if (logsDrawerEl) {
+      const drawerContent = logsDrawerEl.querySelector('.log-content');
+      if (drawerContent) drawerContent.innerHTML = '';
+    }
   }
   $('#clearLogs').addEventListener('click', clearAllLogs);
   const clearDrawerBtn = document.querySelector('#clearLogsDrawer');
   if (clearDrawerBtn) clearDrawerBtn.addEventListener('click', clearAllLogs);
 
-  // Terminal drawer toggle
+  // Terminal drawer toggle with enhanced functionality
   function setTerminalOpen(open){
     if (!terminalDrawer || !toggleTerminalBtn) return;
     terminalDrawer.classList.toggle('open', open);
@@ -402,7 +472,18 @@
     toggleTerminalBtn.textContent = open ? '▼' : '▲';
     document.body.classList.toggle('terminal-open', open);
     localStorage.setItem('terminal_open', open ? '1' : '0');
+    
+    // Auto-scroll to bottom when opening
+    if (open && logsDrawerEl) {
+      setTimeout(() => {
+        const drawerContent = logsDrawerEl.querySelector('.log-content');
+        if (drawerContent && autoScrollDrawer && autoScrollDrawer.checked) {
+          drawerContent.scrollTop = drawerContent.scrollHeight;
+        }
+      }, 100);
+    }
   }
+  
   if (toggleTerminalBtn) {
     toggleTerminalBtn.addEventListener('click', () => {
       const isOpen = terminalDrawer.classList.contains('open');
@@ -411,6 +492,158 @@
     const saved = localStorage.getItem('terminal_open');
     setTerminalOpen(saved === '1');
   }
+
+  // Keyboard shortcuts for terminal
+  document.addEventListener('keydown', (e) => {
+    // Ctrl/Cmd + ` to toggle terminal (like VS Code)
+    if ((e.ctrlKey || e.metaKey) && e.key === '`') {
+      e.preventDefault();
+      if (terminalDrawer && toggleTerminalBtn) {
+        const isOpen = terminalDrawer.classList.contains('open');
+        setTerminalOpen(!isOpen);
+      }
+    }
+    
+    // Escape to close terminal when focused
+    if (e.key === 'Escape' && terminalDrawer && terminalDrawer.classList.contains('open')) {
+      const activeElement = document.activeElement;
+      if (terminalDrawer.contains(activeElement) || activeElement === document.body) {
+        setTerminalOpen(false);
+      }
+    }
+    
+    // Ctrl/Cmd + K to clear logs when terminal is focused
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      const activeElement = document.activeElement;
+      if (terminalDrawer && terminalDrawer.contains(activeElement)) {
+        e.preventDefault();
+        clearAllLogs();
+        log('System', 'Logs cleared via keyboard shortcut');
+      }
+    }
+  });
+
+  // Enhanced auto-scroll behavior
+  function setupAutoScroll() {
+    [logsEl, logsDrawerEl].forEach(container => {
+      if (!container) return;
+      
+      const content = container.querySelector('.log-content') || container;
+      let isUserScrolling = false;
+      let scrollTimeout;
+      
+      content.addEventListener('scroll', () => {
+        isUserScrolling = true;
+        clearTimeout(scrollTimeout);
+        
+        // Check if user scrolled to bottom
+        const isAtBottom = content.scrollTop + content.clientHeight >= content.scrollHeight - 10;
+        const autoScrollCheckbox = container === logsEl ? autoScroll : autoScrollDrawer;
+        
+        if (isAtBottom && autoScrollCheckbox) {
+          autoScrollCheckbox.checked = true;
+        }
+        
+        scrollTimeout = setTimeout(() => {
+          isUserScrolling = false;
+        }, 1000);
+      });
+    });
+  }
+  
+  // Initialize auto-scroll behavior
+  setupAutoScroll();
+
+  // Add terminal status and connection indicator
+  function updateTerminalStatus() {
+    const terminalTitle = document.querySelector('.terminal-title');
+    if (terminalTitle) {
+      const logCount = document.querySelectorAll('.log-entry').length;
+      const originalText = terminalTitle.textContent.split(' - ')[0];
+      terminalTitle.textContent = `${originalText} - ${logCount} entries`;
+    }
+  }
+
+  // Update status periodically
+  setInterval(updateTerminalStatus, 2000);
+
+  // Add context menu for log entries
+  document.addEventListener('contextmenu', (e) => {
+    const logEntry = e.target.closest('.log-entry');
+    if (logEntry) {
+      e.preventDefault();
+      
+      // Create simple context menu
+      const menu = document.createElement('div');
+      menu.style.cssText = `
+        position: fixed;
+        top: ${e.clientY}px;
+        left: ${e.clientX}px;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-primary);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-sm);
+        z-index: 10000;
+        box-shadow: var(--shadow-lg);
+        font-size: 12px;
+        min-width: 120px;
+      `;
+      
+      const copyOption = document.createElement('div');
+      copyOption.textContent = 'Copy log entry';
+      copyOption.style.cssText = `
+        padding: var(--spacing-xs) var(--spacing-sm);
+        cursor: pointer;
+        border-radius: var(--radius-sm);
+        transition: background 0.2s ease;
+      `;
+      copyOption.addEventListener('mouseenter', () => {
+        copyOption.style.background = 'var(--accent-light)';
+      });
+      copyOption.addEventListener('mouseleave', () => {
+        copyOption.style.background = 'transparent';
+      });
+      copyOption.addEventListener('click', () => {
+        const text = logEntry.textContent;
+        navigator.clipboard.writeText(text).then(() => {
+          log('System', 'Log entry copied to clipboard');
+        });
+        document.body.removeChild(menu);
+      });
+      
+      menu.appendChild(copyOption);
+      document.body.appendChild(menu);
+      
+      // Remove menu on click outside
+      setTimeout(() => {
+        document.addEventListener('click', function removeMenu() {
+          if (document.body.contains(menu)) {
+            document.body.removeChild(menu);
+          }
+          document.removeEventListener('click', removeMenu);
+        });
+      }, 100);
+    }
+  });
+
+  // Initialize log containers on page load
+  function initializeLogContainers() {
+    // Ensure main logs container has proper structure
+    ensureLogContent(logsEl);
+    
+    // Ensure drawer logs container has proper structure
+    if (logsDrawerEl) {
+      ensureLogContent(logsDrawerEl);
+    }
+  }
+
+  // Initialize containers immediately
+  initializeLogContainers();
+
+  // Initialize with a welcome message
+  setTimeout(() => {
+    log('System', 'Terminal initialized - Press Ctrl+` to toggle, Ctrl+K to clear');
+  }, 500);
 
   // Agents list
   const agentSelect = $('#agentSelect');

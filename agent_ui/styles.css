@@ -495,6 +495,24 @@ button.secondary:hover {
   color: var(--accent-primary);
 }
 
+button.icon-btn {
+  min-width: 44px;
+  padding: var(--spacing-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button.icon-btn .nav-icon {
+  font-size: 18px;
+  font-weight: bold;
+  transition: transform 0.2s ease;
+}
+
+button.icon-btn:hover .nav-icon {
+  transform: scale(1.1);
+}
+
 button:disabled { 
   opacity: 0.5; 
   cursor: not-allowed;
@@ -1025,18 +1043,82 @@ button:disabled {
 .block .md h2 { font-size: 1.3em; }
 .block .md h3 { font-size: 1.1em; }
 
-/* Logs */
+/* Enhanced Terminal-style Logs */
 .logs { 
-  background: var(--bg-primary); 
-  border: 1px solid var(--border-primary); 
+  background: linear-gradient(135deg, #0c0e16 0%, #0a0b14 100%); 
+  border: 2px solid var(--border-primary); 
   border-radius: var(--radius-lg); 
-  padding: var(--spacing-md); 
+  padding: 0;
   height: 400px; 
-  overflow: auto; 
-  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 12px;
-  line-height: 1.5;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+  overflow: hidden;
+  font-family: 'JetBrains Mono', 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.4;
+  box-shadow: 
+    inset 0 1px 0 rgba(255,255,255,0.1),
+    0 8px 32px rgba(0,0,0,0.4),
+    0 4px 16px rgba(0,0,0,0.2);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.logs::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-elevated) 100%);
+  border-bottom: 1px solid var(--border-primary);
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.logs::after {
+  content: '● ● ● Terminal Logs';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--spacing-md);
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.logs .log-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-md);
+  padding-top: calc(32px + var(--spacing-md));
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-primary) transparent;
+}
+
+.logs .log-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.logs .log-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.logs .log-content::-webkit-scrollbar-thumb {
+  background: var(--accent-primary);
+  border-radius: 4px;
+  opacity: 0.6;
+}
+
+.logs .log-content::-webkit-scrollbar-thumb:hover {
+  opacity: 1;
 }
 
 .log-controls { 
@@ -1045,21 +1127,39 @@ button:disabled {
   align-items: center; 
   margin-bottom: var(--spacing-md);
   gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: linear-gradient(135deg, var(--glass-bg) 0%, var(--glass-hover) 100%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .log-entry { 
-  border-bottom: 1px dashed var(--border-subtle); 
-  padding: var(--spacing-sm) 0; 
-  transition: background-color 0.2s ease;
+  border-left: 3px solid transparent;
+  padding: var(--spacing-xs) var(--spacing-sm); 
+  margin: 2px 0;
+  transition: all 0.2s ease;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  position: relative;
+  animation: logEntrySlide 0.3s ease-out;
+}
+
+@keyframes logEntrySlide {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .log-entry:hover {
-  background-color: var(--bg-surface);
-  border-radius: var(--radius-sm);
-  padding-left: var(--spacing-sm);
-  padding-right: var(--spacing-sm);
-  margin-left: calc(-1 * var(--spacing-sm));
-  margin-right: calc(-1 * var(--spacing-sm));
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, transparent 100%);
+  border-left-color: var(--accent-primary);
+  transform: translateX(4px);
 }
 
 .log-entry:last-child { 
@@ -1068,21 +1168,135 @@ button:disabled {
 
 .log-entry .time { 
   color: var(--text-subtle); 
-  font-size: 11px; 
+  font-size: 10px; 
   font-weight: 500;
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
+  display: inline-block;
+  min-width: 80px;
 }
 
 .log-entry .scope { 
   color: var(--accent-primary); 
-  font-weight: 600; 
+  font-weight: 700;
+  background: var(--accent-light);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-block;
+  min-width: 60px;
+  text-align: center;
+  margin: 0 var(--spacing-xs);
 }
 
 .log-entry .msg { 
-  color: var(--text-secondary); 
+  color: var(--text-primary); 
+  font-weight: 400;
+}
+
+/* Log level styling */
+.log-entry[data-level="error"] {
+  border-left-color: var(--error);
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.1) 0%, transparent 100%);
+}
+
+.log-entry[data-level="error"] .scope {
+  background: var(--error-bg);
+  color: var(--error);
+}
+
+.log-entry[data-level="warning"] {
+  border-left-color: var(--warning);
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.1) 0%, transparent 100%);
+}
+
+.log-entry[data-level="warning"] .scope {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+.log-entry[data-level="success"] {
+  border-left-color: var(--success);
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.1) 0%, transparent 100%);
+}
+
+.log-entry[data-level="success"] .scope {
+  background: var(--success-bg);
+  color: var(--success);
 }
 
 .log-entry details { 
   margin-top: var(--spacing-xs); 
+}
+
+.log-entry details summary {
+  transition: color 0.2s ease;
+  user-select: none;
+}
+
+.log-entry details summary:hover {
+  color: var(--accent-primary);
+}
+
+.log-entry details[open] summary {
+  color: var(--accent-primary);
+}
+
+/* Terminal cursor animation */
+.logs::after {
+  animation: terminalPulse 2s ease-in-out infinite;
+}
+
+@keyframes terminalPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Smooth scrollbar for better UX */
+.logs .log-content {
+  scroll-behavior: smooth;
+}
+
+/* Terminal-like selection */
+.log-entry::selection,
+.log-entry *::selection {
+  background: var(--accent-primary);
+  color: white;
+}
+
+/* Loading indicator for logs */
+.logs.loading::before {
+  animation: loadingPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes loadingPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Enhanced focus states for accessibility */
+.terminal-toggle:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.log-entry details summary:focus-visible {
+  outline: 1px solid var(--accent-primary);
+  outline-offset: 1px;
+  border-radius: var(--radius-sm);
+}
+
+/* Hover effects for interactive elements */
+.terminal-header:hover::before {
+  animation: terminalLights 0.5s ease-in-out;
+}
+
+@keyframes terminalLights {
+  0% { opacity: 1; }
+  50% { opacity: 0.8; }
+  100% { opacity: 1; }
 }
 
 /* Badges */
@@ -1183,29 +1397,269 @@ button:disabled {
   box-shadow: 0 0 10px var(--accent-primary);
 }
 
-footer { 
-  padding: var(--spacing-lg); 
-  color: var(--text-muted); 
-  border-top: 1px solid var(--border-primary);
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
-  text-align: center;
-  font-size: 14px;
-  backdrop-filter: blur(8px);
+
+
+/* Enhanced Terminal drawer */
+.terminal-drawer { 
+  position: fixed; 
+  left: 0; 
+  right: 0; 
+  bottom: 0; 
+  background: linear-gradient(135deg, #0c0e16 0%, #0a0b14 100%); 
+  border-top: 2px solid var(--accent-primary); 
+  box-shadow: 
+    0 -8px 32px rgba(0,0,0,0.6),
+    0 -4px 16px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.1); 
+  transition: all 0.4s var(--ease-out-expo); 
+  height: 48px; 
+  overflow: hidden; 
+  z-index: 1000;
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
 }
 
-/* Terminal drawer */
-.terminal-drawer { position: fixed; left: 0; right: 0; bottom: 0; background: #0a0d1c; border-top: 1px solid #252a4a; box-shadow: 0 -8px 20px rgba(0,0,0,0.35); transition: height 0.2s ease, transform 0.2s ease; height: 32px; overflow: hidden; z-index: 3; }
-.terminal-drawer.open { height: 42vh; }
-.terminal-header { display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: #121632; border-top: 1px solid #1a1f3d; border-bottom: 1px solid #252a4a; }
-.terminal-title { font-size: 13px; color: #b9c1e3; }
-.terminal-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-.terminal-autoscroll { font-size: 12px; color: #9aa4c9; }
-.terminal-toggle { background: #39406b; border: none; color: #e8e9f0; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
-.terminal-body { height: calc(100% - 34px); overflow: auto; }
-.terminal-body .logs { height: 100%; border: none; border-radius: 0; }
+.terminal-drawer.open { 
+  height: 50vh; 
+  min-height: 350px;
+  box-shadow: 
+    0 -16px 64px rgba(0,0,0,0.8),
+    0 -8px 32px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255,255,255,0.1);
+}
 
-/* When terminal is open, reserve space so content isn't hidden */
-body.terminal-open main.layout { padding-bottom: 44vh; }
+.terminal-header { 
+  display: flex; 
+  align-items: center; 
+  gap: var(--spacing-md); 
+  padding: var(--spacing-md) var(--spacing-lg); 
+  background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-elevated) 100%); 
+  border-bottom: 1px solid var(--border-primary);
+  height: 48px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.terminal-header::before {
+  content: '';
+  position: absolute;
+  left: var(--spacing-lg);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  background: var(--error);
+  border-radius: 50%;
+  box-shadow: 
+    20px 0 0 var(--warning),
+    40px 0 0 var(--success);
+}
+
+.terminal-title { 
+  font-size: 14px; 
+  color: var(--text-primary); 
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-left: 60px;
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.terminal-title::before {
+  content: '▶';
+  font-size: 12px;
+  color: var(--accent-primary);
+}
+
+.terminal-actions { 
+  margin-left: auto; 
+  display: flex; 
+  align-items: center; 
+  gap: var(--spacing-md); 
+}
+
+.terminal-autoscroll { 
+  font-size: 12px; 
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.terminal-autoscroll input[type="checkbox"] {
+  accent-color: var(--accent-primary);
+}
+
+.terminal-toggle { 
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%); 
+  border: 2px solid var(--accent-border); 
+  color: white; 
+  padding: var(--spacing-sm); 
+  border-radius: var(--radius-md); 
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: all 0.3s var(--ease-out-expo);
+  min-width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.terminal-toggle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+
+.terminal-toggle:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.terminal-toggle:hover::before {
+  left: 100%;
+}
+
+.terminal-toggle:active {
+  transform: translateY(0);
+}
+
+.terminal-body { 
+  height: calc(100% - 48px); 
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #0c0e16 0%, #0a0b14 100%);
+}
+
+.terminal-body .logs { 
+  height: 100%; 
+  border: none; 
+  border-radius: 0;
+  background: transparent;
+  flex: 1;
+  margin-top: 0;
+}
+
+.terminal-body .logs::before,
+.terminal-body .logs::after {
+  display: none;
+}
+
+.terminal-body .logs .log-content {
+  padding-top: var(--spacing-lg);
+  padding: var(--spacing-lg);
+}
+
+/* When terminal is open, add bottom padding to prevent content overlap */
+body.terminal-open {
+  padding-bottom: 50vh;
+}
+
+body.terminal-open main.layout { 
+  padding-bottom: calc(var(--spacing-2xl) + 50vh); 
+}
+
+
+
+/* Responsive terminal adjustments */
+@media (max-width: 768px) {
+  .terminal-drawer.open {
+    height: 60vh;
+    min-height: 250px;
+  }
+  
+  body.terminal-open {
+    padding-bottom: 60vh;
+  }
+  
+  body.terminal-open main.layout {
+    padding-bottom: calc(var(--spacing-xl) + 60vh);
+  }
+  
+
+  
+  .terminal-header {
+    padding: var(--spacing-sm) var(--spacing-md);
+    height: 40px;
+  }
+  
+  .terminal-title {
+    font-size: 12px;
+    margin-left: 50px;
+  }
+  
+  .terminal-header::before {
+    left: var(--spacing-md);
+    width: 8px;
+    height: 8px;
+    box-shadow: 
+      16px 0 0 var(--warning),
+      32px 0 0 var(--success);
+  }
+  
+  .logs {
+    height: 300px;
+  }
+  
+  .logs .log-content {
+    padding: var(--spacing-sm);
+    padding-top: calc(32px + var(--spacing-sm));
+  }
+  
+  .log-entry .time {
+    display: none;
+  }
+  
+  .log-entry .scope {
+    min-width: 50px;
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 480px) {
+  .terminal-drawer.open {
+    height: 70vh;
+  }
+  
+  body.terminal-open {
+    padding-bottom: 70vh;
+  }
+  
+  body.terminal-open main.layout {
+    padding-bottom: calc(var(--spacing-lg) + 70vh);
+  }
+  
+
+  
+  .terminal-actions {
+    gap: var(--spacing-sm);
+  }
+  
+  .terminal-autoscroll {
+    font-size: 10px;
+  }
+  
+  .terminal-toggle {
+    min-width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+}
 
 /* Loader (chat typing) */
 .chat-loader { 

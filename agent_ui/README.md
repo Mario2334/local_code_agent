@@ -14,19 +14,25 @@ A lightweight, detachable web UI to interact with the local Mastra-based code ag
 - Ensure CORS is enabled by the API if you open this UI from file:// or a different origin. If you encounter CORS issues, serve the UI over HTTP (see below) or enable CORS on the server.
 
 ## Launching the UI
-This UI is static and detachable. You can:
+Now available as an Electron desktop app (preferred), while still supporting static use.
 
-1) Open directly:
+1) Electron app (recommended):
+   - cd into `agent_ui`
+   - Install once: `npm install`
+   - Start: `npm start`
+   - The Electron window loads `index.html` locally. External links open in your default browser. The API base URL is configurable in the header.
+
+2) Open directly (static):
    - Open `agent_ui/index.html` in your browser.
-   - If CORS issues occur, use option 2 below.
+   - If CORS issues occur, use option 3 below.
 
-2) Serve locally (recommended to avoid CORS):
+3) Serve locally (to avoid CORS):
    - From the `agent_ui` directory, use any static server (examples):
      - Python 3: `python3 -m http.server 8080`
      - Node (if installed): `npx serve -l 8080` (or any static server)
    - Open `http://localhost:8080`.
 
-3) Detachable:
+4) Detachable:
    - Copy the `agent_ui` folder anywhere and open/serve it. Configure the API base URL in the header field.
 
 ## Usage

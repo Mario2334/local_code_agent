@@ -1,0 +1,17 @@
+{
+  "name": "code-agent-ui-electron",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Electron shell for the Code Agent UI (detachable)",
+  "main": "electron/main.js",
+  "author": "",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "postinstall": "node -e \"console.log('Run `npm start` inside agent_ui to launch Electron')\""
+  },
+  "devDependencies": {
+    "electron": "^31.3.0",
+    "electron-squirrel-startup": "^1.0.0"
+  }
+}

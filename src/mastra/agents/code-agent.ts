@@ -3,6 +3,12 @@ import { openai } from '@ai-sdk/openai';
 import { anthropic } from "@ai-sdk/anthropic";
 import {createVectorQueryTool} from "@mastra/rag";
 import {CHROMA_PROMPT} from "@mastra/chroma"
+import {deepseek} from "@ai-sdk/deepseek";
+import {createOpenRouter} from "@openrouter/ai-sdk-provider";
+
+const openrouter = createOpenRouter({
+  apiKey: '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',
+});
 
 const chromaQueryTool = createVectorQueryTool({
   vectorStoreName: "chroma",
@@ -31,8 +37,10 @@ Domains:
 Always ground answers in retrieved code context before claiming specifics about implementations.
 ${CHROMA_PROMPT}
   `,
-  // model: openai('gpt-5-mini'),
-  model: anthropic("claude-3-5-haiku-latest"),
+  // model: openai('gpt-5'),
+  // model: anthropic("claude-3-5-haiku-latest"),
+  // model: deepseek("deepseek-chat"),
+  model: openrouter.chat("qwen/qwen3-next-80b-a3b-thinking"),
   tools: {
     chromaQueryTool
   }
