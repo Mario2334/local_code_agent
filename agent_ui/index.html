@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>⚡ Code Agent UI</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,6 +12,7 @@
   <meta name="theme-color" content="#3b82f6">
 </head>
 <body>
+  <a href="#chatSection" class="skip-link">Skip to main content</a>
   <header>
     <div class="header-row">
       <h1>Code Agent UI</h1>
@@ -33,16 +34,16 @@
 
   <main class="layout">
     <aside class="sidebar" aria-label="Primary Navigation">
-      <nav class="nav" role="navigation">
-        <div class="nav-group">
-          <div class="nav-group-title">Code</div>
-          <a href="#" class="nav-link" data-target="planningSection" aria-controls="planningSection">Code agent workflow</a>
-          <a href="#" class="nav-link" data-target="chatSection" aria-controls="chatSection">Code chat</a>
+      <nav class="nav" role="navigation" aria-label="Main navigation menu">
+        <div class="nav-group" role="group" aria-labelledby="codeNavGroup">
+          <div class="nav-group-title" id="codeNavGroup">Code</div>
+          <a href="#" class="nav-link" data-target="planningSection" aria-controls="planningSection" role="button" tabindex="0">Code agent workflow</a>
+          <a href="#" class="nav-link" data-target="chatSection" aria-controls="chatSection" role="button" tabindex="0">Code chat</a>
         </div>
-        <div class="nav-group">
-          <div class="nav-group-title">Observability</div>
-          <a href="#" class="nav-link" data-target="observabilitySection" aria-controls="observabilitySection">Observability</a>
-          <a href="#" class="nav-link" data-target="logSection" aria-controls="logSection">Logs</a>
+        <div class="nav-group" role="group" aria-labelledby="observabilityNavGroup">
+          <div class="nav-group-title" id="observabilityNavGroup">Observability</div>
+          <a href="#" class="nav-link" data-target="observabilitySection" aria-controls="observabilitySection" role="button" tabindex="0">Observability</a>
+          <a href="#" class="nav-link" data-target="logSection" aria-controls="logSection" role="button" tabindex="0">Logs</a>
         </div>
       </nav>
     </aside>
@@ -76,26 +77,52 @@
         <div class="output" id="planningOutput"></div>
       </section>
 
-      <section id="chatSection" class="panel chat-panel">
-        <h2>💬 Code Chat - codeAgent</h2>
+      <section id="chatSection" class="panel chat-panel" role="main" aria-labelledby="chatSectionTitle">
+        <h2 id="chatSectionTitle">💬 Code Chat - codeAgent</h2>
         <p>Chat with the code agent. Auto-detects agent by name “Chat Code Agent”, but you can override.</p>
         <div class="form-row">
-          <label>Agent</label>
-          <select id="agentSelect"></select>
-          <input id="agentIdOverride" placeholder="Or specify agentId manually" />
-          <button id="refreshAgents">Refresh Agents</button>
+          <label for="agentSelect">Agent</label>
+          <select id="agentSelect" aria-label="Select AI agent for conversation"></select>
+          <input id="agentIdOverride" placeholder="Or specify agentId manually" aria-label="Manual agent ID override" />
+          <button id="refreshAgents" aria-label="Refresh available agents list">Refresh Agents</button>
         </div>
         <div class="form-row">
-          <label>Message</label>
-          <div class="input-container">
-            <textarea id="chatInput" rows="3" placeholder="Ask a coding question, request help with debugging, or discuss technical concepts..."></textarea>
-            <div class="input-hint">💡 Press <kbd>Ctrl+Enter</kbd> to send, <kbd>Esc</kbd> to clear</div>
+          <label for="chatInput">Message</label>
+          <div class="input-container floating-label" id="chatInputContainer">
+            <div class="floating-label-text">Ask a coding question, request help with debugging, or discuss technical concepts...</div>
+            <textarea 
+              id="chatInput" 
+              rows="3" 
+              aria-label="Chat message input" 
+              aria-describedby="chatInputHint chatInputMeta"
+              role="textbox"
+              aria-multiline="true"
+              aria-required="false"
+              aria-expanded="false"></textarea>
+            <div class="input-hint" id="chatInputHint" role="tooltip">
+              <span class="hint-icon" aria-hidden="true">💡</span>
+              <span class="hint-text">Use keyboard shortcuts for faster interaction</span>
+              <div class="shortcuts" role="list" aria-label="Available keyboard shortcuts">
+                <kbd role="listitem" aria-label="Control plus Enter to send">Ctrl+Enter</kbd> to send
+                <kbd role="listitem" aria-label="Escape to clear">Esc</kbd> to clear
+                <kbd role="listitem" aria-label="Shift plus Enter for new line">Shift+Enter</kbd> for new line
+              </div>
+            </div>
+            <div class="input-meta" id="chatInputMeta" aria-live="polite">
+              <span class="helper-text">Supports markdown formatting and code blocks</span>
+              <span class="char-count" id="charCount" aria-label="Character count">0</span>
+            </div>
           </div>
         </div>
         <div class="actions">
-          <button id="chatStream">Send Message</button>
+          <button id="chatStream" aria-describedby="chatStreamStatus" aria-label="Send chat message">Send Message</button>
+          <div id="chatStreamStatus" class="sr-only" aria-live="polite" aria-atomic="true"></div>
         </div>
-        <div class="output" id="chatOutput"></div>
+        <div class="output" id="chatOutput" role="log" aria-live="polite" aria-label="Chat conversation history" tabindex="0"></div>
+        
+        <!-- Screen reader announcements -->
+        <div id="chatAnnouncements" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+        <div id="chatStatus" class="sr-only" aria-live="polite" aria-atomic="true"></div>
       </section>
 
       <section id="observabilitySection" class="panel">
