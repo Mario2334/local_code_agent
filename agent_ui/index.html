@@ -37,6 +37,7 @@
       <nav class="nav" role="navigation" aria-label="Main navigation menu">
         <div class="nav-group" role="group" aria-labelledby="codeNavGroup">
           <div class="nav-group-title" id="codeNavGroup">Code</div>
+          <a href="#" class="nav-link" data-target="ingestSection" aria-controls="ingestSection" role="button" tabindex="0">RAG Ingest</a>
           <a href="#" class="nav-link" data-target="planningSection" aria-controls="planningSection" role="button" tabindex="0">Code agent workflow</a>
           <a href="#" class="nav-link" data-target="chatSection" aria-controls="chatSection" role="button" tabindex="0">Code chat</a>
         </div>
@@ -45,6 +46,30 @@
     </aside>
 
     <div class="content" id="content">
+      <section id="ingestSection" class="panel">
+        <h2>📥 RAG Ingest - Code Indexing</h2>
+        <p>Invoke the code ingestion workflow (id: <code>codeIngestWorkflow</code>). Provide a local code path and framework.</p>
+        <div class="form-row">
+          <label for="ingestRoot">Code Path</label>
+          <input id="ingestRoot" placeholder="/absolute/path/to/your/code" />
+        </div>
+        <div class="form-row">
+          <label for="ingestFramework">Framework</label>
+          <input id="ingestFramework" placeholder="springboot (default)" />
+        </div>
+        <div class="actions">
+          <button id="runIngestStream">Run (Stream)</button>
+          <button id="runIngestAsync">Run (Async Fallback)</button>
+        </div>
+        <div class="subactions">
+          <label>Run ID</label>
+          <input id="ingestRunId" placeholder="Auto-filled when available" />
+          <button id="fetchIngestRun">Fetch Run</button>
+          <button id="fetchIngestExec">Fetch Execution Result</button>
+        </div>
+        <div class="output" id="ingestOutput"></div>
+      </section>
+
       <section id="planningSection" class="panel">
         <h2>⚙️ Code Agent - Planning Workflow</h2>
         <p>Invoke the planning workflow (id: <code>planning</code>). Streams real-time steps, reasoning, and command outputs.</p>

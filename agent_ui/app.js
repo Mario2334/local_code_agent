@@ -4177,6 +4177,110 @@ echo "Hello World"
     }
   }
 
+  // Ingest stream
+  $('#runIngestStream').addEventListener('click', async () => {
+    const root = $('#ingestRoot').value.trim();
+    const framework = $('#ingestFramework').value.trim();
+    if (!root) return alert('Enter a code path');
+
+    const url = `${apiBase()}/workflows/codeIngestWorkflow/stream`;
+
+    // Ensure we always send a runId as required by Mastra server
+    let runId = $('#ingestRunId').value.trim();
+    if (!runId) {
+      runId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `run_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+      $('#ingestRunId').value = runId;
+    }
+
+    const payload = { runId, inputData: { root, ...(framework ? { framework } : {}) } };
+
+    const ingestOutput = $('#ingestOutput');
+    ingestOutput.textContent = '';
+    appendOutput(ingestOutput, `POST ${url}\n` + JSON.stringify(payload, null, 2));
+    log('Ingest', 'POST stream', { url, payload });
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      await handleStream(res, (evt) => {
+        if (evt.raw) appendOutput(ingestOutput, evt.raw);
+        if (evt.json) {
+          appendOutput(ingestOutput, JSON.stringify(evt.json, null, 2));
+          const newRunId = evt.json.runId || (evt.json.context && evt.json.context.runId);
+          if (newRunId) $('#ingestRunId').value = newRunId;
+        }
+      });
+      log('Ingest', 'Stream completed');
+    } catch (e) {
+      log('Ingest', 'Stream error', String(e));
+      appendOutput(ingestOutput, 'Error: ' + String(e));
+    }
+  });
+
+  // Ingest async fallback
+  $('#runIngestAsync').addEventListener('click', async () => {
+    const root = $('#ingestRoot').value.trim();
+    const framework = $('#ingestFramework').value.trim();
+    if (!root) return alert('Enter a code path');
+
+    const url = `${apiBase()}/workflows/codeIngestWorkflow/start-async`;
+    const payload = { inputData: { root, ...(framework ? { framework } : {}) } };
+
+    const ingestOutput = $('#ingestOutput');
+    ingestOutput.textContent = '';
+    appendOutput(ingestOutput, `POST ${url}\n` + JSON.stringify(payload, null, 2));
+    log('Ingest', 'POST start-async', { url, payload });
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      });
+      const data = await res.json().catch(() => ({}));
+      appendOutput(ingestOutput, JSON.stringify(data, null, 2));
+      if (data.runId) $('#ingestRunId').value = data.runId;
+    } catch (e) {
+      log('Ingest', 'start-async error', String(e));
+      appendOutput(ingestOutput, 'Error: ' + String(e));
+    }
+  });
+
+  // Fetch ingest run
+  $('#fetchIngestRun').addEventListener('click', async () => {
+    const runId = $('#ingestRunId').value.trim();
+    if (!runId) return alert('Enter runId');
+    const url = `${apiBase()}/workflows/codeIngestWorkflow/runs/${encodeURIComponent(runId)}`;
+    const ingestOutput = $('#ingestOutput');
+    log('Ingest', 'GET run ' + url);
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      appendOutput(ingestOutput, JSON.stringify(data, null, 2));
+    } catch (e) {
+      log('Ingest', 'Fetch run error', String(e));
+      appendOutput(ingestOutput, 'Error: ' + String(e));
+    }
+  });
+
+  // Fetch ingest execution result
+  $('#fetchIngestExec').addEventListener('click', async () => {
+    const runId = $('#ingestRunId').value.trim();
+    if (!runId) return alert('Enter runId');
+    const url = `${apiBase()}/workflows/codeIngestWorkflow/runs/${encodeURIComponent(runId)}/execution-result`;
+    const ingestOutput = $('#ingestOutput');
+    log('Ingest', 'GET exec ' + url);
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      appendOutput(ingestOutput, JSON.stringify(data, null, 2));
+    } catch (e) {
+      log('Ingest', 'Fetch exec error', String(e));
+      appendOutput(ingestOutput, 'Error: ' + String(e));
+    }
+  });
+
   // Planning stream
   $('#runPlanningStream').addEventListener('click', async () => {
     const task = $('#planningTask').value.trim();
@@ -4184,7 +4288,15 @@ echo "Hello World"
     if (!task) return alert('Enter a planning task');
 
     const url = `${apiBase()}/workflows/planning/stream`;
-    const payload = { inputData: { userTask: task, detail } };
+
+    // Ensure runId is present for stream endpoint
+    let runId = $('#planningRunId').value.trim();
+    if (!runId) {
+      runId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `run_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+      $('#planningRunId').value = runId;
+    }
+
+    const payload = { runId, inputData: { userTask: task, detail } };
 
     planningOutput.textContent = '';
     appendOutput(planningOutput, `POST ${url}\n` + JSON.stringify(payload, null, 2));
@@ -4212,8 +4324,8 @@ echo "Hello World"
               if (r.error) appendOutput(planningOutput, 'error: ' + r.error);
             });
           }
-          const runId = evt.json.runId || (evt.json.context && evt.json.context.runId);
-          if (runId) $('#planningRunId').value = runId;
+          const newRunId = evt.json.runId || (evt.json.context && evt.json.context.runId);
+          if (newRunId) $('#planningRunId').value = newRunId;
         }
       });
       log('Planning', 'Stream completed');

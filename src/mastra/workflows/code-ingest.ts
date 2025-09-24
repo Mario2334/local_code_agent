@@ -23,7 +23,7 @@ const runCollect = createStep({
 });
 
 export const codeIngestWorkflow = createWorkflow({
-  id: 'code-ingest',
+  id: 'codeIngestWorkflow',
   inputSchema: z.object({ root: z.string(), framework: z.string().default('springboot').optional() }),
   outputSchema: z.object({ indexedCount: z.number(), outFile: z.string() }),
 }).then(runCollect);
