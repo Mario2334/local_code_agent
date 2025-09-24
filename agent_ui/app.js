@@ -9,19 +9,11 @@
   const VIRTUAL_SCROLL_THRESHOLD = 100; // Enable virtual scrolling after this many messages
   const MEMORY_CLEANUP_INTERVAL = 30000; // Clean up every 30 seconds
 
-  const logsEl = $('#logs');
   const planningOutput = $('#planningOutput');
   const chatOutput = $('#chatOutput');
-  const tracesOutput = $('#tracesOutput');
   const apiBaseInput = $('#apiBase');
   const apiStatus = $('#apiStatus');
-  const autoScroll = $('#autoScroll');
   const toggleNavBtn = document.querySelector('#toggleNav');
-  // Drawer elements
-  const logsDrawerEl = document.querySelector('#logsDrawer');
-  const autoScrollDrawer = document.querySelector('#autoScrollDrawer');
-  const terminalDrawer = document.querySelector('#terminalDrawer');
-  const toggleTerminalBtn = document.querySelector('#toggleTerminal');
 
   // Connection status management variables
   let connectionState = 'disconnected';
@@ -50,9 +42,7 @@
   let announcementQueue = [];
   let isProcessingAnnouncements = false;
 
-  // Constants
-  const MAX_LOG_ENTRIES = 1000;
-  const MAX_LOG_DETAILS_CHARS = 10000;
+
 
 
 
@@ -139,8 +129,6 @@
 
       // Initialize auto-resize for chat input
       initializeAutoResize();
-
-      log('Chat', 'Chat panel initialized with enhanced loading states and accessibility features');
     }
   }
   links.forEach(a => {
@@ -201,7 +189,7 @@
       setNavCollapsed(!collapsed);
     });
     const savedCollapsed = localStorage.getItem('ui_nav_collapsed');
-    setNavCollapsed(savedCollapsed === '1');
+    setNavCollapsed(savedCollapsed === null ? true : savedCollapsed === '1');
   }
 
   // Handle window resize for responsive behavior
@@ -217,7 +205,7 @@
           sidebar.classList.remove('mobile-open');
         }
         const savedCollapsed = localStorage.getItem('ui_nav_collapsed');
-        setNavCollapsed(savedCollapsed === '1');
+        setNavCollapsed(savedCollapsed === null ? true : savedCollapsed === '1');
       } else {
         // Auto-collapse on mobile
         setNavCollapsed(true);
@@ -239,11 +227,12 @@
   // Initialize enhanced features after DOM is ready
   document.addEventListener('DOMContentLoaded', () => {
     initializeEnhancedFeatures();
-    
+
     // Show page loader briefly for smooth initial load
     showPageLoader('Initializing interface...');
     setTimeout(() => {
       hidePageLoader();
+
     }, 1000);
   });
 
@@ -254,6 +243,7 @@
     // DOM is already loaded
     setTimeout(() => {
       initializeEnhancedFeatures();
+
     }, 100);
   }
 
@@ -273,137 +263,15 @@
     return d.toISOString();
   }
 
-  function trimLogsContainer(el) {
-    if (!el) return;
-    // Use a fallback value if MAX_LOG_ENTRIES is not yet available
-    const maxEntries = typeof MAX_LOG_ENTRIES !== 'undefined' ? MAX_LOG_ENTRIES : 1000;
-    const excess = el.childElementCount - maxEntries;
-    if (excess > 0) {
-      for (let i = 0; i < excess; i++) {
-        if (el.firstElementChild) {
-          el.removeChild(el.firstElementChild);
-        }
-      }
-    }
-  }
 
-  function ensureLogContent(container) {
-    if (!container) return null;
-    let content = container.querySelector('.log-content');
-    if (!content) {
-      content = document.createElement('div');
-      content.className = 'log-content';
-      container.appendChild(content);
-    }
-    return content;
-  }
-
-  function getLogLevel(scope, message) {
-    const lowerScope = scope.toLowerCase();
-    const lowerMessage = message.toLowerCase();
-
-    if (lowerScope.includes('error') || lowerMessage.includes('error') || lowerMessage.includes('failed')) {
-      return 'error';
-    }
-    if (lowerScope.includes('warn') || lowerMessage.includes('warn') || lowerMessage.includes('warning')) {
-      return 'warning';
-    }
-    if (lowerScope.includes('success') || lowerMessage.includes('success') || lowerMessage.includes('completed')) {
-      return 'success';
-    }
-    return 'info';
-  }
-
-  function log(scope, message, details) {
-    const div = document.createElement('div');
-    div.className = 'log-entry';
-
-    const level = getLogLevel(scope, message);
-    div.setAttribute('data-level', level);
-
-    const time = document.createElement('span');
-    time.className = 'time';
-    time.textContent = new Date().toLocaleTimeString('en-US', {
-      hour12: false,
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
-
-    const scopeSpan = document.createElement('span');
-    scopeSpan.className = 'scope';
-    scopeSpan.textContent = scope.toUpperCase();
-
-    const msgSpan = document.createElement('span');
-    msgSpan.className = 'msg';
-    msgSpan.textContent = message;
-
-    const head = document.createElement('div');
-    head.appendChild(time);
-    head.appendChild(scopeSpan);
-    head.appendChild(msgSpan);
-
-    div.appendChild(head);
-
-    if (details !== undefined) {
-      const det = document.createElement('details');
-      const sum = document.createElement('summary');
-      sum.textContent = '▶ details';
-      sum.style.cursor = 'pointer';
-      sum.style.color = 'var(--text-muted)';
-      sum.style.fontSize = '11px';
-      sum.style.marginTop = 'var(--spacing-xs)';
-      det.appendChild(sum);
-      const pre = document.createElement('pre');
-      pre.style.background = 'var(--bg-surface)';
-      pre.style.border = '1px solid var(--border-primary)';
-      pre.style.borderRadius = 'var(--radius-sm)';
-      pre.style.padding = 'var(--spacing-sm)';
-      pre.style.marginTop = 'var(--spacing-xs)';
-      pre.style.fontSize = '11px';
-      pre.style.maxHeight = '200px';
-      pre.style.overflow = 'auto';
-      let text;
-      try {
-        text = (typeof details === 'string') ? details : JSON.stringify(details, null, 2);
-      } catch (e) {
-        text = String(details);
-      }
-      const maxChars = typeof MAX_LOG_DETAILS_CHARS !== 'undefined' ? MAX_LOG_DETAILS_CHARS : 10000;
-      if (text.length > maxChars) {
-        text = text.slice(0, maxChars) + '\n... truncated ...';
-      }
-      pre.textContent = text;
-      det.appendChild(pre);
-      div.appendChild(det);
-    }
-
-    // Append to main logs panel
-    const mainContent = ensureLogContent(logsEl);
-    if (mainContent) {
-      mainContent.appendChild(div);
-      if (autoScroll && autoScroll.checked) {
-        mainContent.scrollTop = mainContent.scrollHeight;
-      }
-      trimLogsContainer(mainContent);
-    }
-
-    // Mirror to drawer if present
-    if (logsDrawerEl) {
-      const clone = div.cloneNode(true);
-      const drawerContent = ensureLogContent(logsDrawerEl);
-      if (drawerContent) {
-        drawerContent.appendChild(clone);
-        if (autoScrollDrawer && autoScrollDrawer.checked) {
-          drawerContent.scrollTop = drawerContent.scrollHeight;
-        }
-        trimLogsContainer(drawerContent);
-      }
-    }
-  }
 
   function escapeHtml(s) {
     return String(s).replace(/[&<>\"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  }
+
+  // Stub function to replace removed logging functionality
+  function log() {
+    // No-op function to replace removed logging
   }
 
   // Connection status management functions
@@ -456,12 +324,6 @@
 
       // Announce status change to screen readers
       announceToScreenReader(`Connection status: ${displayText}`, 'polite');
-
-      log('Chat', 'Connection status updated', {
-        status,
-        message: displayText,
-        timestamp: new Date().toISOString()
-      });
     }
   }
 
@@ -702,7 +564,7 @@
     `;
 
     chatOutput.innerHTML = skeletonHTML;
-    
+
     // Auto-hide skeleton after 2 seconds if no real content appears
     setTimeout(() => {
       hideChatLoadingSkeleton();
@@ -762,7 +624,7 @@
     document.body.insertAdjacentHTML('beforeend', flashHTML);
 
     const flash = document.getElementById('feedbackFlash');
-    
+
     // Show with animation
     setTimeout(() => {
       flash.classList.add('visible');
@@ -908,11 +770,11 @@
         setTimeout(() => {
           currentPanel.classList.remove('active', 'transitioning-out');
           targetPanel.classList.add('active', 'transitioning-in');
-          
+
           setTimeout(() => {
             targetPanel.classList.remove('transitioning-in');
           }, 600);
-          
+
           currentPanel = targetPanel;
         }, 400);
       } else {
@@ -945,24 +807,24 @@
     if (!codeElement) return;
 
     const code = codeElement.textContent;
-    
+
     navigator.clipboard.writeText(code).then(() => {
       const copyBtn = block.querySelector('.copy-btn');
       if (copyBtn) {
         const originalText = copyBtn.querySelector('.action-text').textContent;
         const originalIcon = copyBtn.querySelector('.action-icon').textContent;
-        
+
         copyBtn.querySelector('.action-text').textContent = 'Copied!';
         copyBtn.querySelector('.action-icon').textContent = '✓';
         copyBtn.classList.add('success');
-        
+
         setTimeout(() => {
           copyBtn.querySelector('.action-text').textContent = originalText;
           copyBtn.querySelector('.action-icon').textContent = originalIcon;
           copyBtn.classList.remove('success');
         }, 2000);
       }
-      
+
       showFeedbackFlash('Code copied to clipboard!', 'success', 2000);
       announceToScreenReader('Code copied to clipboard', 'polite');
     }).catch(() => {
@@ -977,11 +839,11 @@
 
     const content = block.querySelector('.code-content');
     const expandBtn = block.querySelector('.expand-btn');
-    
+
     if (!content || !expandBtn) return;
 
     const isExpanded = expandBtn.getAttribute('aria-expanded') === 'true';
-    
+
     if (isExpanded) {
       content.style.maxHeight = '200px';
       expandBtn.setAttribute('aria-expanded', 'false');
@@ -1018,7 +880,7 @@
 
     showFeedbackFlash(`File reference: ${file}`, 'success', 2000);
     announceToScreenReader(`File reference clicked: ${file}`, 'polite');
-    
+
     log('Chat', 'File reference clicked', { file, type, name, path });
   }
 
@@ -1031,7 +893,7 @@
       textarea.style.height = 'auto';
       const newHeight = Math.min(Math.max(textarea.scrollHeight, 120), 300);
       textarea.style.height = `${newHeight}px`;
-      
+
       // Add resize class for smooth animation
       textarea.classList.add('auto-resizing');
       setTimeout(() => {
@@ -1054,7 +916,7 @@
 
     const children = Array.from(container.children);
     container.classList.add('stagger-animation');
-    
+
     children.forEach((child, index) => {
       child.style.animationDelay = `${index * delay}ms`;
     });
@@ -1091,10 +953,10 @@
   function initializeEnhancedFeatures() {
     // Initialize scroll progress
     initializeScrollProgress();
-    
+
     // Initialize auto-resize
     initializeAutoResize();
-    
+
     // Add tooltips to key elements
     const elements = [
       { selector: '#chatStream', text: 'Send message (Ctrl+Enter)', position: 'top' },
@@ -1421,8 +1283,8 @@
       // Images
       png: '🖼️', jpg: '🖼️', jpeg: '🖼️', gif: '🖼️', svg: '🎨', ico: '🖼️',
 
-      // Logs & text
-      log: '📋', txt: '📝', text: '📝', out: '📋',
+      // Text files
+      txt: '📝', text: '📝', log: '📄', out: '📄',
 
       // Default
       '': '📄'
@@ -2056,78 +1918,12 @@
     }
   });
 
-  // Logs controls
-  function clearAllLogs() {
-    const mainContent = logsEl.querySelector('.log-content');
-    if (mainContent) mainContent.innerHTML = '';
 
-    if (logsDrawerEl) {
-      const drawerContent = logsDrawerEl.querySelector('.log-content');
-      if (drawerContent) drawerContent.innerHTML = '';
-    }
-  }
-  $('#clearLogs').addEventListener('click', clearAllLogs);
-  const clearDrawerBtn = document.querySelector('#clearLogsDrawer');
-  if (clearDrawerBtn) clearDrawerBtn.addEventListener('click', clearAllLogs);
 
-  // Terminal drawer toggle with enhanced functionality
-  function setTerminalOpen(open) {
-    if (!terminalDrawer || !toggleTerminalBtn) return;
-    terminalDrawer.classList.toggle('open', open);
-    terminalDrawer.setAttribute('aria-expanded', String(open));
-    toggleTerminalBtn.setAttribute('aria-expanded', String(open));
-    toggleTerminalBtn.textContent = open ? '▼' : '▲';
-    document.body.classList.toggle('terminal-open', open);
-    localStorage.setItem('terminal_open', open ? '1' : '0');
 
-    // Auto-scroll to bottom when opening
-    if (open && logsDrawerEl) {
-      setTimeout(() => {
-        const drawerContent = logsDrawerEl.querySelector('.log-content');
-        if (drawerContent && autoScrollDrawer && autoScrollDrawer.checked) {
-          drawerContent.scrollTop = drawerContent.scrollHeight;
-        }
-      }, 100);
-    }
-  }
-
-  if (toggleTerminalBtn) {
-    toggleTerminalBtn.addEventListener('click', () => {
-      const isOpen = terminalDrawer.classList.contains('open');
-      setTerminalOpen(!isOpen);
-    });
-    const saved = localStorage.getItem('terminal_open');
-    setTerminalOpen(saved === '1');
-  }
 
   // Enhanced keyboard shortcuts including file reference support
   document.addEventListener('keydown', (e) => {
-    // Ctrl/Cmd + ` to toggle terminal (like VS Code)
-    if ((e.ctrlKey || e.metaKey) && e.key === '`') {
-      e.preventDefault();
-      if (terminalDrawer && toggleTerminalBtn) {
-        const isOpen = terminalDrawer.classList.contains('open');
-        setTerminalOpen(!isOpen);
-      }
-    }
-
-    // Escape to close terminal when focused
-    if (e.key === 'Escape' && terminalDrawer && terminalDrawer.classList.contains('open')) {
-      const activeElement = document.activeElement;
-      if (terminalDrawer.contains(activeElement) || activeElement === document.body) {
-        setTerminalOpen(false);
-      }
-    }
-
-    // Ctrl/Cmd + K to clear logs when terminal is focused
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-      const activeElement = document.activeElement;
-      if (terminalDrawer && terminalDrawer.contains(activeElement)) {
-        e.preventDefault();
-        clearAllLogs();
-        log('System', 'Logs cleared via keyboard shortcut');
-      }
-    }
 
     // File reference keyboard interactions
     const activeElement = document.activeElement;
@@ -2154,108 +1950,11 @@
     }
   });
 
-  // Enhanced auto-scroll behavior
-  function setupAutoScroll() {
-    [logsEl, logsDrawerEl].forEach(container => {
-      if (!container) return;
 
-      const content = container.querySelector('.log-content') || container;
-      let isUserScrolling = false;
-      let scrollTimeout;
 
-      content.addEventListener('scroll', () => {
-        isUserScrolling = true;
-        clearTimeout(scrollTimeout);
 
-        // Check if user scrolled to bottom
-        const isAtBottom = content.scrollTop + content.clientHeight >= content.scrollHeight - 10;
-        const autoScrollCheckbox = container === logsEl ? autoScroll : autoScrollDrawer;
 
-        if (isAtBottom && autoScrollCheckbox) {
-          autoScrollCheckbox.checked = true;
-        }
 
-        scrollTimeout = setTimeout(() => {
-          isUserScrolling = false;
-        }, 1000);
-      });
-    });
-  }
-
-  // Initialize auto-scroll behavior
-  setupAutoScroll();
-
-  // Add terminal status and connection indicator
-  function updateTerminalStatus() {
-    const terminalTitle = document.querySelector('.terminal-title');
-    if (terminalTitle) {
-      const logCount = document.querySelectorAll('.log-entry').length;
-      const originalText = terminalTitle.textContent.split(' - ')[0];
-      terminalTitle.textContent = `${originalText} - ${logCount} entries`;
-    }
-  }
-
-  // Update status periodically
-  setInterval(updateTerminalStatus, 2000);
-
-  // Add context menu for log entries
-  document.addEventListener('contextmenu', (e) => {
-    const logEntry = e.target.closest('.log-entry');
-    if (logEntry) {
-      e.preventDefault();
-
-      // Create simple context menu
-      const menu = document.createElement('div');
-      menu.style.cssText = `
-        position: fixed;
-        top: ${e.clientY}px;
-        left: ${e.clientX}px;
-        background: var(--bg-surface);
-        border: 1px solid var(--border-primary);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-sm);
-        z-index: 10000;
-        box-shadow: var(--shadow-lg);
-        font-size: 12px;
-        min-width: 120px;
-      `;
-
-      const copyOption = document.createElement('div');
-      copyOption.textContent = 'Copy log entry';
-      copyOption.style.cssText = `
-        padding: var(--spacing-xs) var(--spacing-sm);
-        cursor: pointer;
-        border-radius: var(--radius-sm);
-        transition: background 0.2s ease;
-      `;
-      copyOption.addEventListener('mouseenter', () => {
-        copyOption.style.background = 'var(--accent-light)';
-      });
-      copyOption.addEventListener('mouseleave', () => {
-        copyOption.style.background = 'transparent';
-      });
-      copyOption.addEventListener('click', () => {
-        const text = logEntry.textContent;
-        navigator.clipboard.writeText(text).then(() => {
-          log('System', 'Log entry copied to clipboard');
-        });
-        document.body.removeChild(menu);
-      });
-
-      menu.appendChild(copyOption);
-      document.body.appendChild(menu);
-
-      // Remove menu on click outside
-      setTimeout(() => {
-        document.addEventListener('click', function removeMenu() {
-          if (document.body.contains(menu)) {
-            document.body.removeChild(menu);
-          }
-          document.removeEventListener('click', removeMenu);
-        });
-      }, 100);
-    }
-  });
 
   // Enhanced file reference interactions
   function initializeFileReferenceInteractions() {
@@ -2338,19 +2037,7 @@
   // Initialize file reference interactions on page load
   initializeFileReferenceInteractions();
 
-  // Initialize log containers on page load
-  function initializeLogContainers() {
-    // Ensure main logs container has proper structure
-    ensureLogContent(logsEl);
 
-    // Ensure drawer logs container has proper structure
-    if (logsDrawerEl) {
-      ensureLogContent(logsDrawerEl);
-    }
-  }
-
-  // Initialize containers immediately
-  initializeLogContainers();
 
   // Initialize accessibility features
   document.addEventListener('DOMContentLoaded', () => {
@@ -4622,20 +4309,7 @@ echo "Hello World"
     }
   });
 
-  // Observability traces
-  $('#fetchTraces').addEventListener('click', async () => {
-    const url = `${apiBase()}/observability/traces?perPage=10`;
-    log('Traces', 'GET ' + url);
-    tracesOutput.textContent = '';
-    try {
-      const res = await fetch(url);
-      const data = await res.json();
-      appendOutput(tracesOutput, JSON.stringify(data, null, 2));
-    } catch (e) {
-      appendOutput(tracesOutput, 'Error: ' + String(e));
-      log('Traces', 'Error', String(e));
-    }
-  });
+
 
   // Stream handler: supports SSE and chunked JSON/NDJSON
   async function handleStream(res, onEvent) {
@@ -5061,7 +4735,7 @@ echo "Hello World"
       swipeIndicator.className = 'swipe-indicator';
       document.body.appendChild(swipeIndicator);
     }
-    
+
     if (!swipeProgress) {
       swipeProgress = document.createElement('div');
       swipeProgress.className = 'swipe-progress';
@@ -5072,11 +4746,11 @@ echo "Hello World"
   // Show swipe indicator
   function showSwipeIndicator(direction, progress = 0) {
     if (!swipeIndicator) createSwipeIndicators();
-    
+
     swipeIndicator.className = `swipe-indicator ${direction}`;
     swipeIndicator.textContent = direction === 'left' ? '←' : '→';
     swipeIndicator.classList.add('visible');
-    
+
     if (swipeProgress) {
       swipeProgress.style.width = `${Math.min(progress * 100, 100)}%`;
       swipeProgress.classList.add('visible');
@@ -5096,10 +4770,10 @@ echo "Hello World"
   // Enhanced message swipe handling
   function handleMessageSwipe(message, offset) {
     if (!message) return;
-    
+
     message.style.setProperty('--swipe-offset', `${offset}px`);
     message.classList.add('swipe-active');
-    
+
     if (Math.abs(offset) > swipeThreshold) {
       message.classList.add('swipe-threshold');
     } else {
@@ -5110,7 +4784,7 @@ echo "Hello World"
   // Reset message swipe
   function resetMessageSwipe(message) {
     if (!message) return;
-    
+
     message.style.removeProperty('--swipe-offset');
     message.classList.remove('swipe-active', 'swipe-threshold');
   }
@@ -5118,9 +4792,9 @@ echo "Hello World"
   // Handle swipe actions
   function handleSwipeAction(message, direction) {
     if (!message) return;
-    
+
     const messageText = message.querySelector('.msg-content')?.textContent || '';
-    
+
     if (direction === 'right') {
       // Copy message to clipboard
       if (navigator.clipboard && messageText) {
@@ -5163,7 +4837,7 @@ echo "Hello World"
       backdrop-filter: blur(16px);
       border: 1px solid var(--glass-border);
     `;
-    
+
     if (type === 'success') {
       toast.style.borderColor = 'var(--success)';
       toast.style.color = 'var(--success)';
@@ -5171,15 +4845,15 @@ echo "Hello World"
       toast.style.borderColor = 'var(--error)';
       toast.style.color = 'var(--error)';
     }
-    
+
     document.body.appendChild(toast);
-    
+
     // Animate in
     requestAnimationFrame(() => {
       toast.style.opacity = '1';
       toast.style.transform = 'translateX(-50%) translateY(0)';
     });
-    
+
     // Remove after delay
     setTimeout(() => {
       toast.style.opacity = '0';
@@ -5199,7 +4873,7 @@ echo "Hello World"
     isSwiping = false;
     swipeTarget = null;
     swipeOffset = 0;
-    
+
     // Check if touch started on a message
     const message = e.target.closest('.msg');
     if (message && window.innerWidth <= 768) {
@@ -5218,23 +4892,23 @@ echo "Hello World"
     // Only handle horizontal swipes
     if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 20) {
       isSwiping = true;
-      
+
       // Handle message swipes
       if (swipeTarget && Math.abs(diffX) > 30) {
         e.preventDefault(); // Prevent scrolling during swipe
         swipeOffset = -diffX;
         handleMessageSwipe(swipeTarget, swipeOffset);
-        
+
         const progress = Math.abs(swipeOffset) / swipeThreshold;
         const direction = swipeOffset > 0 ? 'right' : 'left';
         showSwipeIndicator(direction, progress);
         return;
       }
-      
+
       // Handle navigation swipes
       if (Math.abs(diffX) > 50) {
         const progress = Math.abs(diffX) / 150;
-        
+
         // Swipe right to open sidebar (from left edge)
         if (diffX < -100 && touchStartX < 50 && window.innerWidth <= 968) {
           showSwipeIndicator('right', progress);
@@ -5243,7 +4917,7 @@ echo "Hello World"
             hideSwipeIndicator();
           }
         }
-        
+
         // Swipe left to close sidebar
         else if (diffX > 100 && !document.body.classList.contains('nav-collapsed') && window.innerWidth <= 968) {
           showSwipeIndicator('left', progress);
@@ -5262,14 +4936,14 @@ echo "Hello World"
       const direction = swipeOffset > 0 ? 'right' : 'left';
       handleSwipeAction(swipeTarget, direction);
     }
-    
+
     // Reset swipe state
     if (swipeTarget) {
       resetMessageSwipe(swipeTarget);
     }
-    
+
     hideSwipeIndicator();
-    
+
     touchStartX = 0;
     touchStartY = 0;
     isSwiping = false;
@@ -5280,20 +4954,20 @@ echo "Hello World"
   // Mobile keyboard handling
   function handleMobileKeyboard() {
     if (window.innerWidth > 768) return;
-    
+
     const chatInput = document.getElementById('chatInput');
     const inputContainer = document.getElementById('chatInputContainer');
     const chatPanel = document.querySelector('.panel.chat-panel');
-    
+
     if (!chatInput || !inputContainer || !chatPanel) return;
-    
+
     let initialViewportHeight = window.innerHeight;
-    
+
     // Handle viewport changes (keyboard show/hide)
     function handleViewportChange() {
       const currentHeight = window.innerHeight;
       const heightDiff = initialViewportHeight - currentHeight;
-      
+
       if (heightDiff > 150) { // Keyboard is likely open
         inputContainer.classList.add('keyboard-active');
         chatPanel.classList.add('keyboard-active');
@@ -5302,20 +4976,20 @@ echo "Hello World"
         chatPanel.classList.remove('keyboard-active');
       }
     }
-    
+
     // Listen for viewport changes
     window.addEventListener('resize', handleViewportChange);
-    
+
     // Handle input focus
     chatInput.addEventListener('focus', () => {
       setTimeout(() => {
-        chatInput.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center' 
+        chatInput.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
         });
       }, 300);
     });
-    
+
     // Handle input blur
     chatInput.addEventListener('blur', () => {
       setTimeout(() => {
@@ -5329,7 +5003,7 @@ echo "Hello World"
   function initializeMobileEnhancements() {
     createSwipeIndicators();
     handleMobileKeyboard();
-    
+
     // Add mobile-specific event listeners
     if (window.innerWidth <= 768) {
       // Handle sidebar overlay clicks
@@ -5342,7 +5016,7 @@ echo "Hello World"
           }
         }
       });
-      
+
       // Prevent zoom on double tap for UI elements
       let lastTouchEnd = 0;
       document.addEventListener('touchend', (e) => {
@@ -5383,7 +5057,7 @@ echo "Hello World"
     // Alt + number keys for quick panel switching
     if (e.altKey && e.key >= '1' && e.key <= '4') {
       e.preventDefault();
-      const panelIds = ['planningSection', 'chatSection', 'observabilitySection', 'logSection'];
+      const panelIds = ['planningSection', 'chatSection'];
       const index = parseInt(e.key) - 1;
       if (panelIds[index]) {
         enhancedShowPanel(panelIds[index]);
@@ -6142,50 +5816,50 @@ echo "Hello World"
     });
   }
 
-function toggleThinkingMode() {
-  isThinkingMode = !isThinkingMode;
-  const btn = document.getElementById('toggleThinking');
-  if (btn) {
-    btn.classList.toggle('active', isThinkingMode);
-    btn.innerHTML = `<span class="icon">🧠</span> ${isThinkingMode ? 'Simple' : 'Detailed'}`;
-  }
-  log('Chat', `Thinking mode: ${isThinkingMode ? 'detailed' : 'simple'}`);
-}
-
-// Enhanced exportChatHistory function with multiple formats is defined above
-
-// Enhanced message sending states with visual feedback
-function setMessageSendingState(messageElement, state) {
-  if (!messageElement) return;
-
-  // Remove all existing state classes
-  messageElement.classList.remove('sending', 'sent', 'error');
-
-  // Add new state class
-  if (state && state !== 'normal') {
-    messageElement.classList.add(state);
+  function toggleThinkingMode() {
+    isThinkingMode = !isThinkingMode;
+    const btn = document.getElementById('toggleThinking');
+    if (btn) {
+      btn.classList.toggle('active', isThinkingMode);
+      btn.innerHTML = `<span class="icon">🧠</span> ${isThinkingMode ? 'Simple' : 'Detailed'}`;
+    }
+    log('Chat', `Thinking mode: ${isThinkingMode ? 'detailed' : 'simple'}`);
   }
 
-  log('Chat', 'Message state updated', { state, messageId: messageElement.id || 'unknown' });
-}
+  // Enhanced exportChatHistory function with multiple formats is defined above
+
+  // Enhanced message sending states with visual feedback
+  function setMessageSendingState(messageElement, state) {
+    if (!messageElement) return;
+
+    // Remove all existing state classes
+    messageElement.classList.remove('sending', 'sent', 'error');
+
+    // Add new state class
+    if (state && state !== 'normal') {
+      messageElement.classList.add(state);
+    }
+
+    log('Chat', 'Message state updated', { state, messageId: messageElement.id || 'unknown' });
+  }
 
 
 
-// Enhanced error display with retry mechanisms
-function showErrorDisplay(errorMessage, retryCallback = null, dismissCallback = null) {
-  const thread = createChatThread();
+  // Enhanced error display with retry mechanisms
+  function showErrorDisplay(errorMessage, retryCallback = null, dismissCallback = null) {
+    const thread = createChatThread();
 
-  // Remove any existing error displays
-  const existingErrors = thread.querySelectorAll('.error-display');
-  existingErrors.forEach(error => error.remove());
+    // Remove any existing error displays
+    const existingErrors = thread.querySelectorAll('.error-display');
+    existingErrors.forEach(error => error.remove());
 
-  const errorDisplay = document.createElement('div');
-  errorDisplay.className = 'error-display';
+    const errorDisplay = document.createElement('div');
+    errorDisplay.className = 'error-display';
 
-  const errorId = `error-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  errorDisplay.id = errorId;
+    const errorId = `error-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    errorDisplay.id = errorId;
 
-  errorDisplay.innerHTML = `
+    errorDisplay.innerHTML = `
       <div class="error-header">
         <span class="error-icon">⚠️</span>
         <span class="error-title">Error</span>
@@ -6204,146 +5878,146 @@ function showErrorDisplay(errorMessage, retryCallback = null, dismissCallback = 
       </div>
     `;
 
-  thread.appendChild(errorDisplay);
+    thread.appendChild(errorDisplay);
 
-  // Store callbacks for later use
-  if (retryCallback) {
-    window[`retryCallback_${errorId}`] = retryCallback;
+    // Store callbacks for later use
+    if (retryCallback) {
+      window[`retryCallback_${errorId}`] = retryCallback;
+    }
+    if (dismissCallback) {
+      window[`dismissCallback_${errorId}`] = dismissCallback;
+    }
+
+    // Auto-scroll to error display
+    setTimeout(() => {
+      errorDisplay.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, 100);
+
+    log('Chat', 'Error display shown', {
+      errorId,
+      message: errorMessage,
+      hasRetry: !!retryCallback
+    });
+
+    return errorId;
   }
-  if (dismissCallback) {
-    window[`dismissCallback_${errorId}`] = dismissCallback;
-  }
 
-  // Auto-scroll to error display
-  setTimeout(() => {
-    errorDisplay.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, 100);
+  // Global error handling functions
+  window.handleErrorRetry = function (errorId) {
+    const retryBtn = document.querySelector(`#${errorId} .retry-btn`);
+    const retryCallback = window[`retryCallback_${errorId}`];
 
-  log('Chat', 'Error display shown', {
-    errorId,
-    message: errorMessage,
-    hasRetry: !!retryCallback
-  });
+    if (retryBtn && retryCallback) {
+      retryBtn.classList.add('retrying');
+      retryBtn.disabled = true;
 
-  return errorId;
-}
+      log('Chat', 'Error retry initiated', { errorId });
 
-// Global error handling functions
-window.handleErrorRetry = function (errorId) {
-  const retryBtn = document.querySelector(`#${errorId} .retry-btn`);
-  const retryCallback = window[`retryCallback_${errorId}`];
+      // Execute retry callback
+      Promise.resolve(retryCallback()).then(() => {
+        // Remove error display on successful retry
+        const errorDisplay = document.getElementById(errorId);
+        if (errorDisplay) {
+          errorDisplay.style.animation = 'errorSlideOut 0.3s ease forwards';
+          setTimeout(() => {
+            if (errorDisplay.parentNode) {
+              errorDisplay.parentNode.removeChild(errorDisplay);
+            }
+          }, 300);
+        }
 
-  if (retryBtn && retryCallback) {
-    retryBtn.classList.add('retrying');
-    retryBtn.disabled = true;
+        // Clean up callbacks
+        delete window[`retryCallback_${errorId}`];
+        delete window[`dismissCallback_${errorId}`];
 
-    log('Chat', 'Error retry initiated', { errorId });
+        log('Chat', 'Error retry completed', { errorId });
+      }).catch((error) => {
+        // Re-enable retry button on failure
+        retryBtn.classList.remove('retrying');
+        retryBtn.disabled = false;
 
-    // Execute retry callback
-    Promise.resolve(retryCallback()).then(() => {
-      // Remove error display on successful retry
-      const errorDisplay = document.getElementById(errorId);
-      if (errorDisplay) {
-        errorDisplay.style.animation = 'errorSlideOut 0.3s ease forwards';
-        setTimeout(() => {
-          if (errorDisplay.parentNode) {
-            errorDisplay.parentNode.removeChild(errorDisplay);
-          }
-        }, 300);
+        log('Chat', 'Error retry failed', { errorId, error: String(error) });
+      });
+    }
+  };
+
+  window.handleErrorDismiss = function (errorId) {
+    const errorDisplay = document.getElementById(errorId);
+    const dismissCallback = window[`dismissCallback_${errorId}`];
+
+    if (errorDisplay) {
+      errorDisplay.style.animation = 'errorSlideOut 0.3s ease forwards';
+      setTimeout(() => {
+        if (errorDisplay.parentNode) {
+          errorDisplay.parentNode.removeChild(errorDisplay);
+        }
+      }, 300);
+
+      // Execute dismiss callback if provided
+      if (dismissCallback) {
+        dismissCallback();
       }
 
       // Clean up callbacks
       delete window[`retryCallback_${errorId}`];
       delete window[`dismissCallback_${errorId}`];
 
-      log('Chat', 'Error retry completed', { errorId });
-    }).catch((error) => {
-      // Re-enable retry button on failure
-      retryBtn.classList.remove('retrying');
-      retryBtn.disabled = false;
-
-      log('Chat', 'Error retry failed', { errorId, error: String(error) });
-    });
-  }
-};
-
-window.handleErrorDismiss = function (errorId) {
-  const errorDisplay = document.getElementById(errorId);
-  const dismissCallback = window[`dismissCallback_${errorId}`];
-
-  if (errorDisplay) {
-    errorDisplay.style.animation = 'errorSlideOut 0.3s ease forwards';
-    setTimeout(() => {
-      if (errorDisplay.parentNode) {
-        errorDisplay.parentNode.removeChild(errorDisplay);
-      }
-    }, 300);
-
-    // Execute dismiss callback if provided
-    if (dismissCallback) {
-      dismissCallback();
+      log('Chat', 'Error display dismissed', { errorId });
     }
+  };
 
-    // Clean up callbacks
-    delete window[`retryCallback_${errorId}`];
-    delete window[`dismissCallback_${errorId}`];
+  // Progress feedback for loading operations
+  function showProgressIndicator(message = 'Processing...') {
+    const thread = createChatThread();
 
-    log('Chat', 'Error display dismissed', { errorId });
-  }
-};
+    // Remove existing progress indicators
+    const existingProgress = thread.querySelectorAll('.progress-indicator');
+    existingProgress.forEach(progress => progress.remove());
 
-// Progress feedback for loading operations
-function showProgressIndicator(message = 'Processing...') {
-  const thread = createChatThread();
-
-  // Remove existing progress indicators
-  const existingProgress = thread.querySelectorAll('.progress-indicator');
-  existingProgress.forEach(progress => progress.remove());
-
-  const progressIndicator = document.createElement('div');
-  progressIndicator.className = 'progress-indicator';
-  progressIndicator.innerHTML = `
+    const progressIndicator = document.createElement('div');
+    progressIndicator.className = 'progress-indicator';
+    progressIndicator.innerHTML = `
       <div class="progress-icon"></div>
       <span class="progress-text">${escapeHtml(message)}</span>
     `;
 
-  thread.appendChild(progressIndicator);
+    thread.appendChild(progressIndicator);
 
-  // Auto-scroll to progress indicator
-  setTimeout(() => {
-    progressIndicator.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, 100);
-
-  log('Chat', 'Progress indicator shown', { message });
-
-  return progressIndicator;
-}
-
-function hideProgressIndicator() {
-  const progressIndicators = document.querySelectorAll('.progress-indicator');
-  progressIndicators.forEach(indicator => {
-    indicator.style.animation = 'progressSlideOut 0.3s ease forwards';
+    // Auto-scroll to progress indicator
     setTimeout(() => {
-      if (indicator.parentNode) {
-        indicator.parentNode.removeChild(indicator);
-      }
-    }, 300);
-  });
+      progressIndicator.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, 100);
 
-  if (progressIndicators.length > 0) {
-    log('Chat', 'Progress indicators hidden', { count: progressIndicators.length });
+    log('Chat', 'Progress indicator shown', { message });
+
+    return progressIndicator;
   }
-}
 
-// Global functions for external use
-window.addChatMessage = addMessageToThread;
-window.showChatTyping = showTypingIndicator;
-window.hideChatTyping = hideTypingIndicator;
-window.updateChatMessageStatus = updateMessageStatus;
-window.setMessageSendingState = setMessageSendingState;
-window.updateConnectionStatus = updateConnectionStatus;
-window.showErrorDisplay = showErrorDisplay;
-window.showProgressIndicator = showProgressIndicator;
-window.hideProgressIndicator = hideProgressIndicator;
+  function hideProgressIndicator() {
+    const progressIndicators = document.querySelectorAll('.progress-indicator');
+    progressIndicators.forEach(indicator => {
+      indicator.style.animation = 'progressSlideOut 0.3s ease forwards';
+      setTimeout(() => {
+        if (indicator.parentNode) {
+          indicator.parentNode.removeChild(indicator);
+        }
+      }, 300);
+    });
 
-}) ();
+    if (progressIndicators.length > 0) {
+      log('Chat', 'Progress indicators hidden', { count: progressIndicators.length });
+    }
+  }
+
+  // Global functions for external use
+  window.addChatMessage = addMessageToThread;
+  window.showChatTyping = showTypingIndicator;
+  window.hideChatTyping = hideTypingIndicator;
+  window.updateChatMessageStatus = updateMessageStatus;
+  window.setMessageSendingState = setMessageSendingState;
+  window.updateConnectionStatus = updateConnectionStatus;
+  window.showErrorDisplay = showErrorDisplay;
+  window.showProgressIndicator = showProgressIndicator;
+  window.hideProgressIndicator = hideProgressIndicator;
+
+})();

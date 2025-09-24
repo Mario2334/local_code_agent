@@ -11,7 +11,7 @@
   <meta name="description" content="Modern AI Code Agent Interface">
   <meta name="theme-color" content="#3b82f6">
 </head>
-<body>
+<body class="nav-collapsed">
   <a href="#chatSection" class="skip-link">Skip to main content</a>
   <header>
     <div class="header-row">
@@ -40,11 +40,7 @@
           <a href="#" class="nav-link" data-target="planningSection" aria-controls="planningSection" role="button" tabindex="0">Code agent workflow</a>
           <a href="#" class="nav-link" data-target="chatSection" aria-controls="chatSection" role="button" tabindex="0">Code chat</a>
         </div>
-        <div class="nav-group" role="group" aria-labelledby="observabilityNavGroup">
-          <div class="nav-group-title" id="observabilityNavGroup">Observability</div>
-          <a href="#" class="nav-link" data-target="observabilitySection" aria-controls="observabilitySection" role="button" tabindex="0">Observability</a>
-          <a href="#" class="nav-link" data-target="logSection" aria-controls="logSection" role="button" tabindex="0">Logs</a>
-        </div>
+
       </nav>
     </aside>
 
@@ -125,39 +121,11 @@
         <div id="chatStatus" class="sr-only" aria-live="polite" aria-atomic="true"></div>
       </section>
 
-      <section id="observabilitySection" class="panel">
-        <h2>🔍 Observability (Optional)</h2>
-        <div class="actions">
-          <button id="fetchTraces">Fetch Recent Traces</button>
-        </div>
-        <div class="output" id="tracesOutput"></div>
-      </section>
 
-      <section id="logSection" class="panel">
-        <h2>📄 Logs</h2>
-        <div class="log-controls">
-          <button id="clearLogs">Clear Logs</button>
-          <label><input type="checkbox" id="autoScroll" checked /> Auto-scroll</label>
-        </div>
-        <div id="logs" class="logs"></div>
-      </section>
     </div>
   </main>
 
-  <!-- Bottom expandable terminal drawer for logs -->
-  <div id="terminalDrawer" class="terminal-drawer" aria-label="Logs terminal" aria-expanded="false">
-    <div class="terminal-header">
-      <button id="toggleTerminal" class="terminal-toggle" aria-controls="terminalDrawer" aria-expanded="false">▲</button>
-      <span class="terminal-title">Logs</span>
-      <div class="terminal-actions">
-        <label class="terminal-autoscroll"><input type="checkbox" id="autoScrollDrawer" checked /> Auto-scroll</label>
-        <button id="clearLogsDrawer" class="secondary">Clear</button>
-      </div>
-    </div>
-    <div class="terminal-body">
-      <div id="logsDrawer" class="logs"></div>
-    </div>
-  </div>
+
 
   <script src="./app.js"></script>
 </body>

@@ -7,7 +7,7 @@ import {deepseek} from "@ai-sdk/deepseek";
 import {createOpenRouter} from "@openrouter/ai-sdk-provider";
 
 const openrouter = createOpenRouter({
-  apiKey: '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',
+  apiKey: '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',
 });
 
 const chromaQueryTool = createVectorQueryTool({
@@ -41,8 +41,8 @@ ${CHROMA_PROMPT}
   // model: anthropic("claude-sonnet-4-20250514"),
   // model: deepseek("deepseek-chat"),
   // model: openrouter.chat("qwen/qwen3-next-80b-a3b-thinking"),
-  // model: openrouter.chat("qwen/qwen3-coder-flash"),
-  model: openrouter.chat("openrouter/sonoma-dusk-alpha"),
+  model: openrouter.chat("qwen/qwen3-coder-flash"),
+  // model: openrouter.chat("openrouter/sonoma-dusk-alpha"),
   tools: {
     chromaQueryTool
   }
