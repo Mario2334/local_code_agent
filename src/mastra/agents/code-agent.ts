@@ -7,7 +7,7 @@ import {deepseek} from "@ai-sdk/deepseek";
 import {createOpenRouter} from "@openrouter/ai-sdk-provider";
 
 const openrouter = createOpenRouter({
-  apiKey: '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',
+  apiKey: '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',
 });
 
 const chromaQueryTool = createVectorQueryTool({

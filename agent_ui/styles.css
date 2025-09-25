@@ -8547,3 +8547,68 @@ textarea {
     transform: translateZ(0);
   }
 }
+
+/* RAG Workflow Revamp */
+.workflow {
+  display: block;
+  margin-top: var(--spacing-md);
+}
+
+.panel-subtitle {
+  color: var(--text-muted);
+  margin: 6px 0 18px 0;
+}
+
+.steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--spacing-lg);
+}
+
+.step-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background: linear-gradient(180deg, var(--glass-bg), rgba(255,255,255,0.02));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-glass);
+  transition: transform .2s var(--ease-in-out-quart), box-shadow .2s var(--ease-in-out-quart);
+}
+.step-card:hover { transform: translateY(-1px); box-shadow: var(--shadow-glass-lg); }
+
+.step-number {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: radial-gradient(100% 100% at 50% 0%, var(--accent-primary), var(--accent-hover));
+  display: grid; place-items: center; font-weight: 700; color: white;
+  box-shadow: 0 10px 20px rgba(59,130,246,0.25);
+}
+.step-content { display: grid; gap: 6px; }
+.step-title { margin: 0; font-size: 18px; }
+.step-desc { margin: 0 0 8px 0; color: var(--text-secondary); }
+.step-grid { display: grid; gap: var(--spacing-md); grid-template-columns: 1fr 1fr; }
+@media (max-width: 800px) { .step-grid { grid-template-columns: 1fr; } }
+
+/* Buttons */
+.btn-large { padding: 14px 18px; font-size: 15px; border-radius: 12px; }
+.btn-primary { background: var(--accent-primary); color: #fff; border: 1px solid var(--accent-border); box-shadow: 0 8px 20px rgba(59,130,246,0.25); }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-secondary { background: transparent; color: var(--text-primary); border: 1px solid var(--border-secondary); }
+.btn-secondary:hover { background: var(--glass-hover); }
+
+.subactions-inline { display: flex; flex-wrap: wrap; align-items: end; gap: var(--spacing-md); }
+.form-row.inline { display: grid; gap: 6px; min-width: 280px; }
+.subactions-inline .buttons { display: flex; gap: var(--spacing-sm); }
+
+/* Elevated output box */
+.output.elevated {
+  margin-top: var(--spacing-md);
+  background: var(--bg-elevated);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}

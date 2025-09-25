@@ -48,26 +48,61 @@
     <div class="content" id="content">
       <section id="ingestSection" class="panel">
         <h2>📥 RAG Ingest - Code Indexing</h2>
-        <p>Invoke the code ingestion workflow (id: <code>codeIngestWorkflow</code>). Provide a local code path and framework.</p>
-        <div class="form-row">
-          <label for="ingestRoot">Code Path</label>
-          <input id="ingestRoot" placeholder="/absolute/path/to/your/code" />
+        <p class="panel-subtitle">Run a simple 3-step workflow to build your Retrieval-Augmented Generation (RAG) index from your local codebase.</p>
+
+        <div class="workflow">
+          <ol class="steps" role="list">
+            <li class="step-card">
+              <div class="step-number" aria-hidden="true">1</div>
+              <div class="step-content">
+                <h3 class="step-title">Select Source</h3>
+                <p class="step-desc">Choose the root folder of your codebase and optionally specify the framework preset.</p>
+                <div class="step-grid">
+                  <div class="form-row">
+                    <label for="ingestRoot">Code Path</label>
+                    <input id="ingestRoot" placeholder="/absolute/path/to/your/code" />
+                  </div>
+                  <div class="form-row">
+                    <label for="ingestFramework">Framework</label>
+                    <input id="ingestFramework" placeholder="springboot (default)" />
+                  </div>
+                </div>
+              </div>
+            </li>
+
+            <li class="step-card">
+              <div class="step-number" aria-hidden="true">2</div>
+              <div class="step-content">
+                <h3 class="step-title">Index Code</h3>
+                <p class="step-desc">Kick off indexing. Streaming gives live progress; Async runs in background with a Run ID.</p>
+                <div class="actions">
+                  <button id="runIngestStream" class="btn-primary btn-large">Index Now (Stream)</button>
+                  <button id="runIngestAsync" class="btn-secondary btn-large">Index in Background (Async)</button>
+                </div>
+              </div>
+            </li>
+
+            <li class="step-card">
+              <div class="step-number" aria-hidden="true">3</div>
+              <div class="step-content">
+                <h3 class="step-title">Track Status</h3>
+                <p class="step-desc">Use the Run ID to fetch run details or the final execution result.</p>
+                <div class="subactions subactions-inline">
+                  <div class="form-row inline">
+                    <label for="ingestRunId">Run ID</label>
+                    <input id="ingestRunId" placeholder="Auto-filled when available" />
+                  </div>
+                  <div class="buttons">
+                    <button id="fetchIngestRun" class="secondary">Fetch Run</button>
+                    <button id="fetchIngestExec" class="secondary">Fetch Execution Result</button>
+                  </div>
+                </div>
+              </div>
+            </li>
+          </ol>
+
+          <div class="output elevated" id="ingestOutput" aria-live="polite"></div>
         </div>
-        <div class="form-row">
-          <label for="ingestFramework">Framework</label>
-          <input id="ingestFramework" placeholder="springboot (default)" />
-        </div>
-        <div class="actions">
-          <button id="runIngestStream">Run (Stream)</button>
-          <button id="runIngestAsync">Run (Async Fallback)</button>
-        </div>
-        <div class="subactions">
-          <label>Run ID</label>
-          <input id="ingestRunId" placeholder="Auto-filled when available" />
-          <button id="fetchIngestRun">Fetch Run</button>
-          <button id="fetchIngestExec">Fetch Execution Result</button>
-        </div>
-        <div class="output" id="ingestOutput"></div>
       </section>
 
       <section id="planningSection" class="panel">
