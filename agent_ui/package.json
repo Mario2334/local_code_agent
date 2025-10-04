@@ -8,10 +8,16 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
+    "build": "electron-builder",
+    "build-mac": "electron-builder --mac",
+    "build-win": "electron-builder --win",
+    "build-linux": "electron-builder --linux",
+    "pack": "electron-builder --dir",
     "postinstall": "node -e \"console.log('Run `npm start` inside agent_ui to launch Electron')\""
   },
   "devDependencies": {
     "electron": "^31.3.0",
+    "electron-builder": "^26.0.12",
     "electron-squirrel-startup": "^1.0.0"
   }
 }
